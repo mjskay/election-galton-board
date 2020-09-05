@@ -1,0 +1,115 @@
+---
+title: "Untitled"
+author: "mjskay"
+date: "8/21/2020"
+output: html_document
+---
+
+## Setup
+
+```{r setup}
+library(tidyverse)
+library(Hmisc)
+library(ggdist)
+
+theme_set(theme_ggdist())
+```
+
+## 538 Data
+
+Read in the data from 538, which contains predicting probabilities of Trump and Biden achieving each number of electoral votes:
+
+```{r}
+df_538 = read.csv("538_presidential_ev_probabilities_2020.csv")
+```
+
+From this we can plot a histogram of Biden's predicted probability of achieving each number of electoral votes (with 270 being a majority):
+
+```{r}
+col_270 = "#1b9e77"
+
+base_plot = df_538 %>%
+  ggplot(aes(x = total_ev, y = evprob_chal)) +
+  geom_col(fill = "gray75") +
+  geom_vline(xintercept = 270, color = col_270, size = 1) +
+  annotate("label", x = 270, y = max(df_538$evprob_chal), label = "270", color = col_270, size = 3) +
+  xlab("Electoral votes for Biden") +
+  scale_y_continuous(breaks = NULL) +
+  ylab("") +
+  xlim(-1, 540)
+
+base_plot
+```
+
+Let's approximate this with a normal distribution by simply using the mean and variance of the predictive distribution:
+
+```{r}
+mean_ev = wtd.mean(df_538$total_ev, weights = df_538$evprob_chal)
+# Must multiply by number of simulations as (normally 40,000 for 538)
+# as total N is used in the weighted variance calc
+var_ev = wtd.var(df_538$total_ev, weights = df_538$evprob_chal * df_538$simulations)
+sd_ev = sqrt(var_ev)
+```
+
+And plot:
+
+```{r}
+col_normal = "#7570b3"
+normal_density = tibble(x = 1:538, y = dnorm(x, mean_ev, sd_ev))
+
+base_plot + 
+  geom_line(aes(x = x, y = y), data = normal_density, color = col_normal, size = 1)
+```
+
+The Normal approximation looks decent. Let's continue down this train a bit a use the binomial approximation to the Normal by finding a binomial distribution with the same variance and then shifting its location to match the above Normal distribution. 
+
+We can use the fact that the variance of a Binomial distribution with probability 0.5 is equal to 1/4 the number of trials in the distribution to find the number of trials needed (which is the same as the height of the Galton board we would need to construct):
+
+```{r}
+bin_n = round(4 * var_ev)
+bin_n
+```
+
+That would be a very large Galton board! Leaving that aside for a moment, let's see how well it approximates the distribution:
+
+```{r}
+col_binom = "#d95f02"
+binom_mass = tibble(x = 0:538, y = dbinom(x + round(bin_n/2 - mean_ev), bin_n, 0.5))
+
+base_plot + 
+  geom_line(aes(x = x, y = y), data = normal_density, color = col_normal, size = 1) +
+  geom_step(aes(x = x, y = y), data = binom_mass, color = col_binom, direction = "mid", size = 1)
+```
+
+The binomial distribution looks nearly identical to the Normal distribution here. However, like I said, it would require a very large Galton board to generate this distribution down to the single electoral vote level. So instead, let's use wider bins --- say, bins between 35 and 45 electoral votes wide. In fact, we'll pick a bin width that puts the 270 as close to a bin boundary as we can, given the scaling/shifting of the distribution we will be doing: 
+
+```{r}
+candidate_bin_width = 35:45
+candidate_bin_n = round(4 * var_ev / candidate_bin_width^2)
+bin_width = candidate_bin_width[which.min(abs(
+  (270/candidate_bin_width + candidate_bin_n/2 - mean_ev/candidate_bin_width) %% 1 - 0.5
+))]
+bin_width
+```
+
+That gives us a bin width of `r bin_width`, leading to...
+
+```{r}
+bin_n_small = round(4 * var_ev / bin_width^2)
+bin_n_small
+```
+
+... a Galton board only `r bin_n_small` rows tall, which is much more manageable. Let's check on the approximation:
+
+```{r}
+binom_mass_small = tibble(
+  x = 0:538, 
+  y = dbinom(round(x/bin_width + bin_n_small/2 - mean_ev/bin_width), bin_n_small, 0.5) / bin_width
+)
+
+base_plot + 
+  geom_line(aes(x = x, y = y), data = normal_density, color = col_normal, size = 1) +
+  geom_step(aes(x = x, y = y), data = binom_mass_small, color = col_binom, direction = "mid", size = 1)
+
+```
+
