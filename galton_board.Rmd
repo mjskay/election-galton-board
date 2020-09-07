@@ -18,8 +18,6 @@ library(ggdist)
 library(ggforce)
 library(chipmunkcore)   # not on CRAN, see below
 library(chipmunkbasic)  # not on CRAN, see below
-
-set.seed(1)
 ```
 
 To set up [chipmunkbasic](https://coolbutuseless.github.io/package/chipmunkbasic/index.html) you must install the [chipmunkcore](https://coolbutuseless.github.io/package/chipmunkcore/) package and its dependencies as well. Both packages are not available on CRAN as of this writing, and can be a it of a pain to install. The installation instructions in the [chipmunkcore documentation](https://coolbutuseless.github.io/package/chipmunkcore/) appear to be the most complete at this time.
@@ -31,9 +29,10 @@ To determine the board dimensions, we need to decide on the number of draws we w
 ```{r parameters}
 n_draw = 50
 
-n_pin = 20
-bin_width = 37
-board_mean = 325.5
+n_pin = 8
+bin_width = 39
+board_mean = 328.5
+model_name = "the Economist's model"
 
 x_min = 0
 x_max = 540
@@ -42,11 +41,11 @@ x_max = 540
 Now we can determine the dimensions of the board required:
 
 ```{r dimensions}
-row_height = bin_width * 1.5
+row_height = bin_width * 1.9
 # ball width is just a bit smaller than the bins
-ball_width = bin_width * 14/15
+ball_width = bin_width * 0.95 # 14/15
 # slot height needs to accommodate the tallest bin in the distribution plus some leeway
-slot_height = dbinom(round(n_pin/2), n_pin, 0.5) * n_draw * ball_width * 1.25
+slot_height = dbinom(round(n_pin/2), n_pin, 0.5) * n_draw * ball_width * 1.4
 board_height = slot_height + n_pin * row_height
 ```
 
@@ -143,6 +142,8 @@ Then, we render all frame of the Galton board one at a time into PNG files in th
 4. Repeat
 
 ```{r}
+set.seed(12345)
+
 frames_till_draw = 5
 # n_pin*2 below leaves some time at the end for the last balls to get to the bottom
 n_frame = n_draw * frames_till_draw + n_pin*2
@@ -155,12 +156,12 @@ x0 = seq(-n_pin/2, n_pin/2) * bin_width + board_mean
 x0 = x0[min(slot_edges) < x0 & x0 < max(slot_edges)]
 
 # starting_x = runif(n_draw, -bin_width/2, bin_width/2)
-starting_x = qunif(ppoints(n_draw, a = 3/8), -bin_width/2, bin_width/2) + board_mean
+starting_x = qunif(ppoints(n_draw, a = 0.75), -bin_width/2, bin_width/2) + board_mean
 starting_x = sample(starting_x, length(starting_x))
 
 # figure out aspect ratio
 height_px = 700
-width_px = (max(slot_edges) - min(slot_edges))/(board_height + 10 * bin_width) * height_px
+width_px = (max(slot_edges, x_max) - min(slot_edges, x_min))/(board_height + 10 * bin_width) * height_px
 
 Biden_color = "#0571b0"
 Trump_color = "#ca0020"
@@ -234,10 +235,15 @@ for (i in 1:n_frame) {
     theme_ggdist() + 
     theme(
       axis.line.y = element_blank(),
-      axis.line.x = element_line(color = "gray75", size = 1)
+      axis.line.x = element_line(color = "gray75", size = 1),
+      axis.title.x = element_text(hjust = 0, size = 10, color = "gray50")
     ) +
     scale_y_continuous(breaks = NULL) +
-    labs(x = NULL, y = NULL)
+    scale_x_continuous(limits = range(slot_edges, x_min, x_max)) +
+    labs(
+      x = paste0("\nBased on an approximation\nof ", model_name),
+      y = NULL
+    )
   print(p)
   invisible(dev.off())
 

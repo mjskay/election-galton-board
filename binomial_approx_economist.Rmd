@@ -5,7 +5,7 @@ date: "8/21/2020"
 output: html_document
 ---
 
-To build a Galton board for the 538 prediction, we need a binomial distribution that can approximate
+To build a Galton board for the Economist prediction, we need a binomial distribution that can approximate
 its current prediction. In this document we'll find such a distribution.
 
 Basically, what we want by the end of this document is a bin width, number of bins, and
@@ -21,12 +21,12 @@ library(ggdist)
 theme_set(theme_ggdist())
 ```
 
-## 538 Data
+## Economist Data
 
-Read in the data from 538, which can be obtained from the bottom of [this page](https://projects.fivethirtyeight.com/2020-election-forecast/). It contains predicted probabilities of Trump and Biden achieving each number of electoral votes:
+Read in the data from the Economist, which can be obtained from the bottom of [this page](https://projects.economist.com/us-2020-forecast/president). It contains predicted probabilities of Trump and Biden achieving each number of electoral votes:
 
 ```{r}
-df_538 = read.csv("data/538/presidential_ev_probabilities_2020.csv")
+df_econ = read.csv("data/economist/electoral_college_simulations.csv")
 ```
 
 From this we can plot a histogram of Biden's predicted probability of achieving each number of electoral votes (with 270 being a majority):
@@ -34,15 +34,15 @@ From this we can plot a histogram of Biden's predicted probability of achieving 
 ```{r}
 col_270 = "#1b9e77"
 
-base_plot = df_538 %>%
-  ggplot(aes(x = total_ev, y = evprob_chal)) +
-  geom_col(fill = "gray75") +
+base_plot = df_econ %>%
+  ggplot(aes(x = dem_ev)) +
+  geom_histogram(aes(y = stat(density)), binwidth = 1, fill = "gray75") +
   geom_vline(xintercept = 270, color = col_270, size = 1) +
-  annotate("label", x = 270, y = max(df_538$evprob_chal), label = "270", color = col_270, size = 3) +
+  annotate("label", x = 270, y = .05, label = "270", color = col_270, size = 3) +
   xlab("Electoral votes for Biden") +
   scale_y_continuous(breaks = NULL) +
   ylab("") +
-  xlim(-1, 540)
+  coord_cartesian(xlim = c(0, 540))
 
 base_plot
 ```
@@ -50,11 +50,9 @@ base_plot
 Let's approximate this with a normal distribution by simply using the mean and variance of the predictive distribution:
 
 ```{r}
-mean_ev = wtd.mean(df_538$total_ev, weights = df_538$evprob_chal)
-# Must multiply by number of simulations as (normally 40,000 for 538)
-# as total N is used in the weighted variance calc
-var_ev = wtd.var(df_538$total_ev, weights = df_538$evprob_chal * df_538$simulations)
-sd_ev = sqrt(var_ev)
+mean_ev = mean(df_econ$dem_ev)
+var_ev = var(df_econ$dem_ev)
+sd_ev = sd(df_econ$dem_ev)
 ```
 
 And plot:
