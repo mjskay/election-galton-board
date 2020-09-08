@@ -29,24 +29,38 @@ To determine the board dimensions, we need to decide on the number of draws we w
 ```{r parameters}
 n_draw = 50
 
+# n_pin = 20
+# bin_width = 37
+# board_mean = 324.5
+# row_ratio = 1.93
+# model_name = "538"
+
 n_pin = 8
-bin_width = 39
-board_mean = 328.5
-model_name = "the Economist's model"
+bin_width = 40
+board_mean = 329
+row_ratio = 1.8
+model_name = "The Economist"
 
 x_min = 0
-x_max = 540
+x_max = 538
+
+friction = 0
+elasticity = 0
+
+show_dist = FALSE
+one_frame = FALSE
 ```
 
 Now we can determine the dimensions of the board required:
 
 ```{r dimensions}
-row_height = bin_width * 1.9
+row_height = bin_width * row_ratio
 # ball width is just a bit smaller than the bins
-ball_width = bin_width * 0.95 # 14/15
+ball_width = bin_width * 0.9 # 14/15
 # slot height needs to accommodate the tallest bin in the distribution plus some leeway
-slot_height = dbinom(round(n_pin/2), n_pin, 0.5) * n_draw * ball_width * 1.4
+slot_height = dbinom(round(n_pin/2), n_pin, 0.5) * n_draw * ball_width * 1.3
 board_height = slot_height + n_pin * row_height
+total_height = 2445 # board_height + 15 * bin_width
 ```
 
 Finally, we can initialize the simulation space. We adjust the gravity based on the `bin_width` so that the circles undergo the same acceleration relative to the size of the board when using larger `bin_width`s:
@@ -62,13 +76,23 @@ Next, we create slots the balls will fall into:
 ```{r slots}
 slot_edges = seq(-(n_pin + 1)/2, (n_pin + 1)/2) * bin_width + board_mean
 
-# restrict ourselves to the predefined min/max x
+# restrict ourselves to the predefined min/max x, if necessary
 slot_edges = slot_edges[x_min - bin_width < slot_edges & slot_edges < x_max + bin_width]
 
-# make the slot edges go all the way up at the board edge
+# extend out the left and right edges to predefined min/max x, if necessary
+slot_edges = c(
+  rev(seq(min(slot_edges), x_min - bin_width, by = -bin_width)),
+  slot_edges[-c(1, length(slot_edges))],
+  seq(max(slot_edges), x_max + bin_width, by = bin_width)
+)
+
+# make the slot edges at the ends of the board 
+# go all the way up the height of the board
 slot_heights = rep(slot_height, length(slot_edges))
 slot_heights[[1]] = board_height
 slot_heights[[length(slot_heights)]] = board_height
+
+# create slots in the simulation
 for (i in seq_along(slot_edges)) {
   cm$add_static_segment(slot_edges[[i]], 0, slot_edges[[i]], slot_heights[[i]])
 }
@@ -90,19 +114,35 @@ pins_df = data.frame()
 for (i in 1:n_pin) {
   y = slot_height + (n_pin - i) * row_height
   
-  xs = (0:floor(n_pin/2)) * bin_width
-  if (i %% 2 == 0) {
+  # xs = (0:floor(n_pin/2)) * bin_width
+  # if (i %% 2 == 0) {
+  #   xs = xs + bin_width/2
+  # }
+  # xs = sort(unique(c(xs, -xs))) + board_mean
+  
+  xs = slot_edges
+  if (i %% 2 == 1) {
     xs = xs + bin_width/2
   }
-  xs = sort(unique(c(xs, -xs))) + board_mean
   
   # restrict ourselves to the predefined min/max x
   xs = xs[min(slot_edges) + bin_width/2 < xs & xs < max(slot_edges) - bin_width/2]
+
   
-  h = 0.05
+  r = bin_width * 0.01
+  # have to access internal chipmunk space object to create a static
+  # circle as chipmunkbasic does not have a function for this (only
+  # static segments)
+  body = cpSpaceGetStaticBody(cm$.__enclos_env__$private$space)
   for (x in xs) {
-    cm$add_static_segment(x, y, x, y - h, friction = 0.05)
+    circle = cpCircleShapeNew(body, r, cpv(x, y))
+    cm$add_shape("static_circle", circle, friction = friction, elasticity = elasticity)
   }
+  
+  # h = 0.05
+  # for (x in xs) {
+  #   cm$add_static_segment(x, y, x, y - h, friction = friction, elasticity = elasticity)
+  # }
   pins_df = rbind(pins_df, data.frame(x = xs, y = y))
 }
 ```
@@ -145,8 +185,8 @@ Then, we render all frame of the Galton board one at a time into PNG files in th
 set.seed(12345)
 
 frames_till_draw = 5
-# n_pin*2 below leaves some time at the end for the last balls to get to the bottom
-n_frame = n_draw * frames_till_draw + n_pin*2
+# 50 below leaves some time at the end for the last balls to get to the bottom
+n_frame = n_draw * frames_till_draw + 40
 
 frame_step = 40  #5
 
@@ -156,12 +196,12 @@ x0 = seq(-n_pin/2, n_pin/2) * bin_width + board_mean
 x0 = x0[min(slot_edges) < x0 & x0 < max(slot_edges)]
 
 # starting_x = runif(n_draw, -bin_width/2, bin_width/2)
-starting_x = qunif(ppoints(n_draw, a = 0.75), -bin_width/2, bin_width/2) + board_mean
+starting_x = qunif(ppoints(n_draw), -bin_width, bin_width) + board_mean
 starting_x = sample(starting_x, length(starting_x))
 
 # figure out aspect ratio
-height_px = 700
-width_px = (max(slot_edges, x_max) - min(slot_edges, x_min))/(board_height + 10 * bin_width) * height_px
+height_px = 800
+width_px = (x_max - x_min + 90)/total_height * height_px
 
 Biden_color = "#0571b0"
 Trump_color = "#ca0020"
@@ -175,77 +215,84 @@ for (i in 1:n_frame) {
       # need a bit of initial velocity so balls aren't spawned too close to each other
       vy = -10/1.5 * bin_width,
       radius   = ball_width/2,
-      friction = 0.05,
-      elasticity = 0.1
+      friction = friction,
+      elasticity = elasticity
     )
   }
   circles <- cm$get_circles()
   
-  outfile <- sprintf("%s/%04i.png", png_dir, i)
-  agg_png(outfile, width = width_px, height = height_px, res = 100)
-  p = ggplot(circles) + 
-    geom_point(aes(x, y), size = 1, shape = 18, color = "gray50", data = pins_df) +
-    geom_segment(
-      aes(x, 0, xend = x, yend = height),
-      size = 1, color = "gray75", data = slots_df
-    ) +
-    geom_circle(
-      aes(
-        x0 = x,
-        y0 = y,
-        r = ball_width/2,
-        fill = ifelse(y > slot_height, "none", ifelse(x < 270, "Trump", "Biden"))
-      ), color = NA) + 
-    geom_step(
-      data = data.frame(x0),
-      aes(
-        x = x0,
-        y = n_draw * ball_width * dbinom(
-          round((x0 - board_mean)/bin_width + n_pin/2),
-          size = n_pin,
-          prob = 0.5
-        )),
-      col="black",
-      alpha = 0.2,
-      size = 1,
-      direction = "mid"
-    ) +
-    geom_vline(xintercept = 270, color = "black", alpha = 0.15, size = 1) +
-    annotate("text", 
-      x = 290, y = board_height + 12 * bin_width, 
-      label = "Biden wins", hjust = 0, color = Biden_color
-      # fontface = "bold",
-    ) +
-    annotate("text", 
-      x = 250, y = board_height + 12 * bin_width,
-      label = "Trump wins", hjust = 1, color = Trump_color
-      # fontface = "bold",
-    ) +
-    annotate("label", 
-      x = 270, y = board_height + 14 * bin_width,
-      label = "270", hjust = 0.5, color = "gray50",
-      fontface = "bold"
-    ) +
-    scale_fill_manual(
-      limits = c("none", "Biden", "Trump"),
-      values = c("gray45", Biden_color, Trump_color), 
-      guide = FALSE
-    ) +
-    coord_fixed(ylim = c(0, board_height + 15 * bin_width), expand = FALSE, clip = "off") + 
-    theme_ggdist() + 
-    theme(
-      axis.line.y = element_blank(),
-      axis.line.x = element_line(color = "gray75", size = 1),
-      axis.title.x = element_text(hjust = 0, size = 10, color = "gray50")
-    ) +
-    scale_y_continuous(breaks = NULL) +
-    scale_x_continuous(limits = range(slot_edges, x_min, x_max)) +
-    labs(
-      x = paste0("\nBased on an approximation\nof ", model_name),
-      y = NULL
-    )
-  print(p)
-  invisible(dev.off())
+  if (!one_frame || i == n_frame) {
+    outfile <- sprintf("%s/%04i.png", png_dir, i)
+    agg_png(outfile, width = width_px, height = height_px, res = 100)
+    p = ggplot(circles) + 
+      geom_point(aes(x, y), size = 1, shape = 18, color = "gray50", data = pins_df) +
+      geom_segment(
+        aes(x, 0, xend = x, yend = height),
+        size = 1, color = "gray75", data = slots_df
+      ) +
+      geom_circle(
+        aes(
+          x0 = x,
+          y0 = y,
+          r = ball_width/2,
+          fill = ifelse(y > slot_height, "none", ifelse(x <= 269, "Trump", "Biden"))
+        ), color = NA) + 
+      (if (show_dist) geom_step(
+        data = data.frame(x0),
+        aes(
+          x = x0,
+          y = n_draw * ball_width * dbinom(
+            round((x0 - board_mean)/bin_width + n_pin/2),
+            size = n_pin,
+            prob = 0.5
+          )),
+        col="black",
+        alpha = 0.2,
+        size = 1,
+        direction = "mid"
+      )) +
+      geom_vline(xintercept = 269, color = "black", alpha = 0.15, size = 1) +
+      annotate("text", 
+        x = 290, y = 0.95 * total_height, 
+        label = "Biden wins", hjust = 0, color = Biden_color
+        # fontface = "bold",
+      ) +
+      annotate("text", 
+        x = 250, y = 0.95 * total_height,
+        label = "Trump wins", hjust = 1, color = Trump_color
+        # fontface = "bold",
+      ) +
+      annotate("label", 
+        x = 269, y = 0.98 * total_height,
+        label = "269", hjust = 0.5, color = "gray50",
+        fontface = "bold"
+      ) +
+      scale_fill_manual(
+        limits = c("none", "Biden", "Trump"),
+        values = c("gray45", Biden_color, Trump_color), 
+        guide = FALSE
+      ) +
+      coord_fixed(ylim = c(0, total_height), xlim = c(x_min - 45, x_max + 45), 
+        expand = FALSE, clip = "off") + 
+      theme_ggdist() + 
+      theme(
+        axis.line.y = element_blank(),
+        axis.line.x = element_line(color = "gray75", size = 1),
+        axis.title.x = element_text(hjust = 0, size = 10, color = "gray25"),
+        plot.title = element_text(hjust = 0.5),
+        plot.title.position = "plot"
+      ) +
+      scale_y_continuous(breaks = NULL) +
+      scale_x_continuous(limits = range(slot_edges, x_min, x_max)) +
+      labs(
+        x = paste0("Electoral votes for Biden\n\nBinomial approximation\nof ", 
+          model_name, "'s model"),
+        y = NULL
+      ) +
+      ggtitle(model_name)
+    print(p)
+    invisible(dev.off())
+  }
 
   cm$advance(frame_step)
   setTxtProgressBar(pb, i)
