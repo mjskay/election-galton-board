@@ -347,3 +347,7 @@ p = ggplot(frames_df) +
 animate(p, nframes = n_frame * 4, fps = 30, detail = 2, res = 100, width = width_px, height = height_px)
 ```
 
+```{r}
+anim_save("galton-board.gif")
+```
+
