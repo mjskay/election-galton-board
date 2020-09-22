@@ -25,6 +25,20 @@ theme_set(theme_ggdist())
 
 Read in the data from the Economist, which can be obtained from the bottom of [this page](https://projects.economist.com/us-2020-forecast/president). It contains predicted probabilities of Trump and Biden achieving each number of electoral votes:
 
+```{r eval=FALSE, include=FALSE}
+download.file(
+  "https://cdn.economistdatateam.com/us-2020-forecast/data/president/economist_model_output.zip", 
+  "data/economist/model_output.zip"
+)
+unzip(
+  "data/economist/model_output.zip", 
+  files = "output/site_data//electoral_college_simulations.csv",
+  exdir = "data/economist",
+  junkpaths = TRUE,
+)
+unlink("data/economist/model_output.zip")
+```
+
 ```{r}
 df_econ = read.csv("data/economist/electoral_college_simulations.csv")
 ```
@@ -146,4 +160,9 @@ cat(paste0(
   "bin width: ", bin_width, "\n",
   "mean:      ", mean_ev_adj, "\n"
 ))
+```
+And we can use these quantiles for the dotplot:
+
+```{r}
+cat(deparse(as.vector(quantile(round((df_econ$dem_ev - mean_ev_adj)/bin_width + bin_n_small/2), ppoints(50)))))
 ```

@@ -25,6 +25,13 @@ theme_set(theme_ggdist())
 
 Read in the data from 538, which can be obtained from the bottom of [this page](https://projects.fivethirtyeight.com/2020-election-forecast/). It contains predicted probabilities of Trump and Biden achieving each number of electoral votes:
 
+```{r eval=FALSE, include=FALSE}
+download.file(
+  "https://projects.fivethirtyeight.com/2020-general-data/presidential_ev_probabilities_2020.csv", 
+  "data/538/presidential_ev_probabilities_2020.csv"
+)
+```
+
 ```{r}
 df_538 = read.csv("data/538/presidential_ev_probabilities_2020.csv")
 ```
@@ -149,3 +156,10 @@ cat(paste0(
   "mean:      ", mean_ev_adj, "\n"
 ))
 ```
+```{r}
+# this is a dumb way to do this but it's good enough
+ev_samples = unlist(map2(df_538$total_ev, round(df_538$evprob_chal * 40000), rep))
+
+cat(deparse(as.vector(quantile(round((ev_samples - mean_ev_adj)/bin_width + bin_n_small/2), ppoints(50)))))
+```
+
