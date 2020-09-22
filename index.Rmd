@@ -8,7 +8,13 @@ output: distill::distill_article
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-<img style="width: auto" src="galton_board_538.gif"><img style="width: auto" src="galton_board_economist.gif">
+<style type="text/css">
+.plinko {
+  width: 50%;
+  max-width: 205px;
+}
+</style>
+<img class="plinko" src="galton_board_538.gif"><img class="plinko" src="galton_board_economist.gif">
 
 What will the outcome of the 2020 US Presidential Election be? Forecasters
 build models on top of polling data and historical voting patterns to
@@ -70,9 +76,7 @@ communication; I am merely experimenting with one less-used approach here.
 ## Why did you make this?
 
 I seem to be one of the few people that *liked* the infamous [New York Times
-election needle](https://www.vis4.net/blog/2016/11/jittery-gauges-election-forecast/).
-
-<aside>I talk more about the Needle in my [Tapestry talk](https://www.youtube.com/watch?v=E1kSnWvqCw0).</aside>
+election needle](https://www.vis4.net/blog/2016/11/jittery-gauges-election-forecast/).^[I talk more about the Needle in my [Tapestry talk](https://www.youtube.com/watch?v=E1kSnWvqCw0).]
 
 <img src="nyt-needle.gif" style="max-width: max-content" alt="NYT Election Needle">
 
@@ -82,33 +86,24 @@ itself moves randomly within the central 50% most likely outcomes (according to
 the prediction at that time). 
 
 I think the Needle got one thing right and another thing wrong. What it got
-right was that this kind of animation can help people *experience* uncertainty.
+right was that this kind of animation can help people *experience* uncertainty.^[Jessica Hullman (a frequent collaborator of mine) dubs such animated uncertainty
+visualizations [hypothetical outcome plots (HOPs)](https://mucollective.northwestern.edu/project/hops).]
 This makes the visualization more powerful, and the uncertainty harder to ignore.
 The visualization made people anxious, because they were uncertain about
 something they cared about. But if you're uncertain about something
 you care about, *you should be anxious*.
 
-<aside>
-Jessica Hullman (a frequent collaborator of mine) dubs such animated uncertainty
-visualizations [hypothetical outcome plots (HOPs)](https://mucollective.northwestern.edu/project/hops)
-</aside>
-
-However, I think the Needle also fell victim to a *deterministic construal error*:
+However, I think the Needle also fell victim to a *deterministic construal error*:^[See [Susan Joslyn's work](https://doi.org/10.1177%2F0963721413481473) on deterministic construal errors.]
 many people more readily associate the mechanism of a needle with some deterministic
 measurement, not an uncertain quantity; those people understandably thought the
 rapid movement of the needle reflected that the forecast itself was changing just
 as rapidly.
-
-<aside>
-See [Susan Joslyn's work](https://doi.org/10.1177%2F0963721413481473) on deterministic construal errors.
-</aside>
 
 During [OpenVisConf 2018](http://www.openvisconf.com/), where
 Amanda Cox and Kevin Quealy gave a talk on NYT visualizations and I gave a talk
 on uncertainty visualization, I starting thinking about alternatives to the
 Needle that *do* evoke randomness in the way they work. That's when I 
 started thinking about [Galton boards](https://en.wikipedia.org/wiki/Bean_machine):
-
 
 <img src="physical-galton-board.gif" style="max-width: max-content" alt="A real life Galton board">
 
@@ -117,5 +112,5 @@ distribution could display a distribution *and* a plausible, uncertain mechanism
 that could give rise to it. Michael Corey on Twitter 
 [later made the connection to Plinko](https://twitter.com/mikejcorey/status/1303398043862159360),
 and I decided *Presidential Plinko* would be a better name for this site.^[Besides
-which, Sir Francis Galton was a eugenicist, so naming fewer things after him seems
+which, Sir Francis Galton was a noted eugenicist, so naming fewer things after him seems
 reasonable to me.]
