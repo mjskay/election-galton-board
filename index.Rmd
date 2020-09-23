@@ -9,12 +9,15 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 <style type="text/css">
+d-footnote {
+  margin-left: -1ex;
+}
 .plinko {
   width: 50%;
   max-width: 205px;
 }
 </style>
-<img class="plinko" src="galton_board_538.gif"><img class="plinko" src="galton_board_economist.gif">
+<img class="plinko" src="galton_board-538.gif"><img class="plinko" src="galton_board-the_economist.gif">
 
 What will the outcome of the 2020 US Presidential Election be? Forecasters
 build models on top of polling data and historical voting patterns to
@@ -23,8 +26,8 @@ really internalizing that uncertainty is hard. *Presidential Plinko* takes that
 uncertainty and translates it into Plinko boards with similar uncertainty,
 so that you can experience just how uncertain predictors' forecasts are.
 
-How certain would you be in the outcome to drop a ball from a Plinko board the
-height of the one for the Economist's prediction? How about 538's?
+How certain would you be in the outcome if you dropped a ball from a Plinko board
+the height of the one for the Economist's prediction? How about 538's?
 
 <style type="text/css">
 .videoWrapper {
@@ -47,16 +50,6 @@ height of the one for the Economist's prediction? How about 538's?
 </video>
 </div>
 
-## How does this work?
-
-The short version is, I approximate each forecaster's predictive distribution
-with a scaled-and-shifted binomial distribution, which ultimately determines
-the height of each board. I then determine plausible paths through the board
-that could have lead to the final predictive distribution, which is shown as
-a [quantile dotplot](https://mucollective.northwestern.edu/project/when-ish-is-my-bus).
-Full details of the methodology and source code are 
-[here](https://github.com/mjskay/election-galton-board).
-
 ## Are you affiliated with 538 or the Economist?
 
 No. I am faculty at Northwestern University, where I study uncertainty visualization, 
@@ -71,7 +64,10 @@ or [the Economist's forecast](https://projects.economist.com/us-2020-forecast/pr
 
 These forecasters have put an immense amount of work into their models and
 visualizations. Both have done an excellent job this year in their uncertainty
-communication; I am merely experimenting with one less-used approach here.
+communication. I recommend checking out other posts and discussions about 
+[their visualizations](https://fivethirtyeight.com/features/how-we-designed-the-look-of-our-2020-forecast/)
+or [their models](https://statmodeling.stat.columbia.edu/2020/08/27/florida-comparing-economist-and-fivethirtyeight-forecasts/). 
+I am merely experimenting with one less-used visualization approach here.
 
 ## Why did you make this?
 
@@ -95,9 +91,10 @@ you care about, *you should be anxious*.
 
 However, I think the Needle also fell victim to a *deterministic construal error*:^[See [Susan Joslyn's work](https://doi.org/10.1177%2F0963721413481473) on deterministic construal errors.]
 many people more readily associate the mechanism of a needle with some deterministic
-measurement, not an uncertain quantity; those people understandably thought the
-rapid movement of the needle reflected that the forecast itself was changing just
-as rapidly.
+measurement, not an uncertain quantity.^[To the consternation of statisticians everywhere,
+the act of measuring something evokes certainty, not error, to many people.] Those
+people understandably thought the rapid movement of the needle reflected that the forecast
+itself was changing just as rapidly.
 
 During [OpenVisConf 2018](http://www.openvisconf.com/), where
 Amanda Cox and Kevin Quealy gave a talk on NYT visualizations and I gave a talk
@@ -111,6 +108,22 @@ A Galton board whose height changes according to the variance of a predictive
 distribution could display a distribution *and* a plausible, uncertain mechanism
 that could give rise to it. Michael Corey on Twitter 
 [later made the connection to Plinko](https://twitter.com/mikejcorey/status/1303398043862159360),
-and I decided *Presidential Plinko* would be a better name for this site.^[Besides
+and I decided *Presidential Plinko* would be a good name for this site.^[Besides
 which, Sir Francis Galton was a noted eugenicist, so naming fewer things after him seems
 reasonable to me.]
+
+## How does this work?
+
+The short version is, I approximate each forecaster's predictive distribution
+with a scaled-and-shifted binomial distribution, which ultimately determines
+the height of each board. I then determine plausible paths through the board
+that could have lead to the final predictive distribution, which is shown as
+a [quantile dotplot](https://mucollective.northwestern.edu/project/when-ish-is-my-bus).
+Thus, while the output looks random, the final distribution is exactly the
+forecaster's published distribution, down to the resolution of the dotplot.
+Full details of the methodology and source code are 
+[in the Github repository](https://github.com/mjskay/election-galton-board).
+
+## Author {.appendix}
+
+[Matthew Kay](http://www.mjskay.com), Computer Science and Communication Studies, Northwestern University

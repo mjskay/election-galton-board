@@ -230,8 +230,8 @@ move for each ball is visible (if any):
 ```{r}
 frames_till_draw = 4
 
-# adding 30 gives some extra frames at the end for a pause
-n_frame = n_draw * frames_till_draw + n_bin + 1 - (frames_till_draw - 1) + 30
+# adding 44 gives some extra frames at the end for a pause
+n_frame = n_draw * frames_till_draw - (frames_till_draw - 1) + 45
 
 frames_df = map_dfr(1:n_frame, function(i) {
   paths_df %>%
@@ -310,6 +310,9 @@ Biden_color = "#0571b0"
 Trump_color = "#ca0020"
 
 tweened_frames = group_split(tweened_frames_df, frame_id)
+# repeat the last frame to match up to the desired exact length of the animation
+last_frame = tweened_frames[length(tweened_frames)]
+tweened_frames = c(tweened_frames, rep(last_frame, n_frame * frame_mult - length(tweened_frames)))
 
 pb = txtProgressBar(max = length(tweened_frames), style = 3)
 for (i in seq_along(tweened_frames)) {
@@ -396,7 +399,7 @@ Finally, we use `gifski()` to roll all the frames into an animated GIF:
 ```{r}
 gifski(
   list.files(png_dir, pattern = "*.png", full.names = TRUE), 
-  paste0("galton-board-", to_snake_case(model_name), ".gif"), 
+  paste0("galton_board-", to_snake_case(model_name), ".gif"), 
   width = width_px,
   height = height_px,
   delay = 1/30,
