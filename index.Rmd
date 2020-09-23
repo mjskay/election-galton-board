@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 <style type="text/css">
 d-footnote {
-  margin-left: -1ex;
+  margin-left: -0.5ex;
 }
 .plinko {
   width: 50%;
@@ -92,7 +92,7 @@ you care about, *you should be anxious*.
 However, I think the Needle also fell victim to a *deterministic construal error*:^[See [Susan Joslyn's work](https://doi.org/10.1177%2F0963721413481473) on deterministic construal errors.]
 many people more readily associate the mechanism of a needle with some deterministic
 measurement, not an uncertain quantity.^[To the consternation of statisticians everywhere,
-the act of measuring something evokes certainty, not error, to many people.] Those
+the act of measuring something evokes certainty, not error, for many people.] Those
 people understandably thought the rapid movement of the needle reflected that the forecast
 itself was changing just as rapidly.
 
