@@ -126,4 +126,4 @@ Full details of the methodology and source code are
 
 ## Author {.appendix}
 
-[Matthew Kay](http://www.mjskay.com), Computer Science and Communication Studies, Northwestern University
+[Matthew Kay](http://www.mjskay.com), Assistant Professor, Computer Science and Communication Studies, Northwestern University
