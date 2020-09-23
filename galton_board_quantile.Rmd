@@ -17,6 +17,7 @@ library(ggplot2)
 library(ggdist)
 library(ggforce)
 library(gganimate)
+library(snakecase)
 ```
 
 To set up [chipmunkbasic](https://coolbutuseless.github.io/package/chipmunkbasic/index.html) you must install the [chipmunkcore](https://coolbutuseless.github.io/package/chipmunkcore/) package and its dependencies as well. Both packages are not available on CRAN as of this writing, and can be a bit of a pain to install. The installation instructions in the [chipmunkcore documentation](https://coolbutuseless.github.io/package/chipmunkcore/) appear to be the most complete at this time.
@@ -26,7 +27,7 @@ To set up [chipmunkbasic](https://coolbutuseless.github.io/package/chipmunkbasic
 To determine the board dimensions, we need to decide on the number of draws we will take and the number of pins in one row of the board (equivalently, the size of the Binomial distribution we are simulating with the board):
 
 ```{r parameters}
-n_draw = 50
+n_draw = 5
 
 # n_bin = 14
 # bin_width = 42
@@ -215,7 +216,7 @@ paths_df = paths_df %>%
   filter(move_id == 1) %>%
   mutate(
     move_id = 0,
-    y = y + bin_width * 5
+    y = y + bin_width * 10
   ) %>%
   bind_rows(paths_df) %>%
   mutate(move_id = move_id + 1)
@@ -334,8 +335,8 @@ p = ggplot(frames_df) +
   scale_y_continuous(breaks = NULL) +
   scale_x_continuous(limits = range(slot_edges, x_min, x_max)) +
   labs(
-    x = paste0("Electoral votes for Biden\n\nBinomial approximation\nof ", 
-      model_name, "'s model on ", format(Sys.Date(), "%b %d")),
+    x = paste0("Electoral votes for Biden\n\nPresidential Plinko of\nof ", 
+      model_name, "'s model\n", "Updated ", format(Sys.Date(), "%b %d")),
     y = NULL
   ) +
   ggtitle(model_name) +
@@ -344,10 +345,9 @@ p = ggplot(frames_df) +
 
 # for rendering, double the number of frames to make animation smooth
 # also need to calculate extra non-rendered frames (detail = 2) so that timing is correct
-animate(p, nframes = n_frame * 4, fps = 30, detail = 2, res = 100, width = width_px, height = height_px)
+animate(p, nframes = n_frame * 2, fps = 15, detail = 2, res = 100, width = width_px, height = height_px, type = "cairo", antialias = "gray")
 ```
 
 ```{r}
-anim_save("galton-board.gif")
+anim_save(paste0("galton-board-", to_snake_case(model_name), ".gif"))
 ```
-
