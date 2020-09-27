@@ -1,13 +1,17 @@
 ---
-title: "Quantile Galton Board"
-output: rmarkdown::html_vignette
+output: github_document
 ---
 
-While this code no longer uses the `chipmunkbasic` package, it was originally based on [`vignette("galton", package = "chipmunkbasic")`](https://coolbutuseless.github.io/package/chipmunkbasic/articles/galton.html) by [@coolbutuseless](https://coolbutuseless.github.io/).
+# Quantile Galton Board
+
+The following code constructs a Galton board for a quantile dotplot. While this code no longer uses
+the `chipmunkbasic` package, it was originally based on 
+[`vignette("galton", package = "chipmunkbasic")`](https://coolbutuseless.github.io/package/chipmunkbasic/articles/galton.html) 
+by [coolbutuseless](https://coolbutuseless.github.io/).
 
 ## Setup
 
-The following packages are required for this to run:
+The following packages are required for to construct the Galton board:
 
 ```{r setup}
 library(dplyr)
@@ -22,21 +26,27 @@ library(snakecase)
 library(gifski)
 ```
 
-To set up [chipmunkbasic](https://coolbutuseless.github.io/package/chipmunkbasic/index.html) you must install the [chipmunkcore](https://coolbutuseless.github.io/package/chipmunkcore/) package and its dependencies as well. Both packages are not available on CRAN as of this writing, and can be a bit of a pain to install. The installation instructions in the [chipmunkcore documentation](https://coolbutuseless.github.io/package/chipmunkcore/) appear to be the most complete at this time.
-
 ## Construct the board
 
 To determine the board dimensions, we need to decide on the number of draws we will take and the number of pins in one row of the board (equivalently, the size of the Binomial distribution we are simulating with the board):
 
 ```{r parameters}
-n_draw = 50
+# these checks allow us to include this file at the end of binomial_approx_*.Rmd
+# to re-run this file using the output of the approximation
+if (!exists("n_draw")) n_draw = 50
+if (!exists("n_bin")) n_bin = 14
+if (!exists("bin_width")) bin_width = 42
+if (!exists("board_mean")) board_mean = 332
+if (!exists("row_ratio")) row_ratio = 2
+if (!exists("model_name")) model_name = "538"
+if (!exists("bin_values")) bin_values = qbinom(ppoints(n_draw), n_bin, 0.5)
 
-n_bin = 14
-bin_width = 42
-board_mean = 332
-row_ratio = 2
-model_name = "538"
-bin_values = c(3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6,  7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9,  9, 9, 9, 9, 9, 10, 10, 10, 11)
+# n_bin = 14
+# bin_width = 42
+# board_mean = 332
+# row_ratio = 2
+# model_name = "538"
+# bin_values = c(3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6,  7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9,  9, 9, 9, 9, 9, 10, 10, 10, 11)
 
 # n_bin = 8
 # bin_width = 39
@@ -298,7 +308,7 @@ unlink(list.files(png_dir, pattern = "*.png", full.names = TRUE))
 
 Then, we render all frame of the Galton board one at a time into PNG files in the above directory.
 
-```{r}
+```{r render_frames, message=FALSE, warning=FALSE, results=FALSE}
 x0 = seq(-n_bin/2, n_bin/2) * bin_width + board_mean
 x0 = x0[min(slot_edges) < x0 & x0 < max(slot_edges)]
 
@@ -314,7 +324,7 @@ tweened_frames = group_split(tweened_frames_df, frame_id)
 last_frame = tweened_frames[length(tweened_frames)]
 tweened_frames = c(tweened_frames, rep(last_frame, n_frame * frame_mult - length(tweened_frames)))
 
-pb = txtProgressBar(max = length(tweened_frames), style = 3)
+pb = txtProgressBar(max = length(tweened_frames), style = 3, file = stderr())
 for (i in seq_along(tweened_frames)) {
   tweened_frame = tweened_frames[[i]]
   outfile <- sprintf("%s/%04i.png", png_dir, i)
@@ -396,14 +406,20 @@ for (i in seq_along(tweened_frames)) {
 
 Finally, we use `gifski()` to roll all the frames into an animated GIF:
 
-```{r}
+```{r render_gif, message=FALSE, warning=FALSE, results=FALSE}
+gif_name = paste0("galton_board-", to_snake_case(model_name), ".gif")
+
 gifski(
   list.files(png_dir, pattern = "*.png", full.names = TRUE), 
-  paste0("galton_board-", to_snake_case(model_name), ".gif"), 
+  gif_name, 
   width = width_px,
   height = height_px,
   delay = 1/30,
   loop = TRUE,
   progress = TRUE
 )
+```
+
+```{r echo=FALSE, results="asis"}
+cat("![](", gif_name, ")", sep = "")
 ```

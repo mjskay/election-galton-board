@@ -1,19 +1,18 @@
 ---
 title: "Binomial approximation to 538 prediction"
-author: "mjskay"
-date: "8/21/2020"
-output: html_document
+author: "Matthew Kay"
+output: github_document
 ---
 
 To build a Galton board for the Economist prediction, we need a binomial distribution that can approximate
 its current prediction. In this document we'll find such a distribution.
 
-Basically, what we want by the end of this document is a bin width, number of bins, and
-a mean that we can throw into the Galton board simulation in [galton_board.Rmd](galton_board.Rmd).
+Basically, what we want is a bin width, number of bins, and
+a mean that we then throw into the Galton board renderer in [galton_board_quantile_ragg.Rmd](galton_board_quantile_ragg.Rmd).
 
 ## Setup
 
-```{r setup}
+```{r setup_binom}
 library(tidyverse)
 library(Hmisc)
 library(ggdist)
@@ -152,17 +151,28 @@ base_plot +
   geom_line(aes(x = x, y = y), data = normal_density, color = col_normal, size = 1) +
   geom_step(aes(x = x, y = y), data = binom_mass_small, color = col_binom, direction = "mid", size = 1)
 ```
-Thus, our final approximation is:
+Thus, the final parameters for our approximation are:
 
 ```{r}
+n_bin = bin_n_small
+board_mean = mean_ev_adj
+row_ratio = 2
+model_name = "The Economist"
+
 cat(paste0(
   "bins:      ", bin_n_small, "\n",
   "bin width: ", bin_width, "\n",
   "mean:      ", mean_ev_adj, "\n"
 ))
 ```
+
 And we can use these quantiles for the dotplot:
 
 ```{r}
-cat(deparse(as.vector(quantile(round((df_econ$dem_ev - mean_ev_adj)/bin_width + bin_n_small/2), ppoints(50)))))
+n_draw = 50
+bin_values = as.vector(quantile(round((df_econ$dem_ev - mean_ev_adj)/bin_width + bin_n_small/2), ppoints(n_draw)))
+bin_values
+```
+
+```{r child = 'galton_board_quantile_ragg.Rmd'}
 ```
