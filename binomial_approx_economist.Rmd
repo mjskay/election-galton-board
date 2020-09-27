@@ -1,5 +1,5 @@
 ---
-title: "Binomial approximation to 538 prediction"
+title: "Binomial approximation to the Economist's prediction"
 author: "Matthew Kay"
 output: github_document
 ---
