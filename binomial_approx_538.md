@@ -91,7 +91,7 @@ bin_n = round(4 * var_ev)
 bin_n
 ```
 
-    ## [1] 23592
+    ## [1] 23282
 
 That would be a very large Galton board\! Leaving that aside for a
 moment, let’s see how well it approximates the distribution:
@@ -206,8 +206,8 @@ bin_values = as.vector(quantile(round((ev_samples - mean_ev_adj)/bin_width + bin
 bin_values
 ```
 
-    ##  [1]  3  4  4  4  4  4  5  5  5  5  5  6  6  6  6  6  6  6  6  6  7  7  7  7  7  7  7  7  8  8
-    ## [31]  8  8  8  8  8  8  8  9  9  9  9  9  9  9  9  9 10 10 10 11
+    ##  [1]  3  4  4  4  4  4  5  5  5  5  5  6  6  6  6  6  6  6  6  6  7  7  7  7  7  7  7  7  7  8
+    ## [31]  8  8  8  8  8  8  8  8  9  9  9  9  9  9  9  9 10 10 10 11
 
 # Quantile Galton Board
 
@@ -459,7 +459,7 @@ head(paths_df)
     ## 3       3     7    14  330.       1 1997.            0              14     14     0
     ## 4       4     7    14  330.       1 1997.            0              14     14     0
     ## 5       5     7    14  330.       1 1997.            0              14     14     0
-    ## 6       6     8    16  330.       1 1997.            2              12     14     0
+    ## 6       6     7    14  330.       1 1997.            0              14     14     0
 
 The result is a set of paths like this:
 

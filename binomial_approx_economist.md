@@ -1,4 +1,4 @@
-Binomial approximation to the Economist's prediction
+Binomial approximation to the Economist’s prediction
 ================
 Matthew Kay
 
@@ -14,7 +14,41 @@ we then throw into the Galton board renderer in
 
 ``` r
 library(tidyverse)
+```
+
+    ## -- Attaching packages --------------------------------------- tidyverse 1.3.0 --
+
+    ## v ggplot2 3.3.2     v purrr   0.3.4
+    ## v tibble  3.0.3     v dplyr   1.0.2
+    ## v tidyr   1.1.1     v stringr 1.4.0
+    ## v readr   1.3.1     v forcats 0.5.0
+
+    ## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+    ## x dplyr::filter() masks stats::filter()
+    ## x dplyr::lag()    masks stats::lag()
+
+``` r
 library(Hmisc)
+```
+
+    ## Loading required package: lattice
+
+    ## Loading required package: survival
+
+    ## Loading required package: Formula
+
+    ## 
+    ## Attaching package: 'Hmisc'
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     src, summarize
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     format.pval, units
+
+``` r
 library(ggdist)
 
 theme_set(theme_ggdist())
@@ -89,7 +123,7 @@ bin_n = round(4 * var_ev)
 bin_n
 ```
 
-    ## [1] 10957
+    ## [1] 10868
 
 That would be a very large Galton board\! Leaving that aside for a
 moment, let’s see how well it approximates the distribution:
@@ -122,18 +156,18 @@ bin_width = candidate_bin_width[which.min(abs(
 bin_width
 ```
 
-    ## [1] 38
+    ## [1] 41
 
-That gives us a bin width of 38, leading to…
+That gives us a bin width of 41, leading to…
 
 ``` r
 bin_n_small = round(4 * var_ev / bin_width^2)
 bin_n_small
 ```
 
-    ## [1] 8
+    ## [1] 6
 
-… a Galton board only 8 rows tall, which is much more manageable. Let’s
+… a Galton board only 6 rows tall, which is much more manageable. Let’s
 check on the approximation:
 
 ``` r
@@ -159,7 +193,7 @@ mean_ev_adj = mean_ev + ((269 + bin_n_small*bin_width/2 - mean_ev) %% bin_width 
 mean_ev_adj
 ```
 
-    ## [1] 326
+    ## [1] 330.5
 
 That should make a bin boundary fall on 269:
 
@@ -190,9 +224,9 @@ cat(paste0(
 ))
 ```
 
-    ## bins:      8
-    ## bin width: 38
-    ## mean:      326
+    ## bins:      6
+    ## bin width: 41
+    ## mean:      330.5
 
 And we can use these quantiles for the dotplot:
 
@@ -202,8 +236,8 @@ bin_values = as.vector(quantile(round((df_econ$dem_ev - mean_ev_adj)/bin_width +
 bin_values
 ```
 
-    ##  [1] 1 1 1 2 2 2 2 3 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 4 4 4 4 5 5 5 5 5 5 5 5 5 5 5 5 5 6 6 6
-    ## [47] 6 6 6 7
+    ##  [1] 0 0 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 4 4 4 4 5
+    ## [47] 5 5 5 5
 
 # Quantile Galton Board
 
@@ -450,12 +484,12 @@ head(paths_df)
     ## # Groups:   ball_id [6]
     ##   ball_id   bin   pin     x move_id     y n_fixed_move n_balanced_move n_move  move
     ##     <int> <dbl> <dbl> <dbl>   <dbl> <dbl>        <dbl>           <dbl>  <dbl> <dbl>
-    ## 1       1     3     6   326       1 1537.           -2               6      8     0
-    ## 2       2     3     6   326       1 1537.           -2               6      8     0
-    ## 3       3     4     8   326       1 1537.            0               8      8     0
-    ## 4       4     4     8   326       1 1537.            0               8      8     0
-    ## 5       5     4     8   326       1 1537.            0               8      8     0
-    ## 6       6     4     8   326       1 1537.            0               8      8     0
+    ## 1       1     2     4  330.       1 1588.           -2               4      6     0
+    ## 2       2     2     4  330.       1 1588.           -2               4      6     0
+    ## 3       3     3     6  330.       1 1588.            0               6      6     0
+    ## 4       4     3     6  330.       1 1588.            0               6      6     0
+    ## 5       5     3     6  330.       1 1588.            0               6      6     0
+    ## 6       6     3     6  330.       1 1588.            0               6      6     0
 
 The result is a set of paths like this:
 
