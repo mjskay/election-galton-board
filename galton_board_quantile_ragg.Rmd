@@ -13,7 +13,7 @@ by [coolbutuseless](https://coolbutuseless.github.io/).
 
 The following packages are required for to construct the Galton board:
 
-```{r setup}
+```{r message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
 library(purrr)
@@ -30,7 +30,7 @@ library(gifski)
 
 To determine the board dimensions, we need to decide on the number of draws we will take and the number of pins in one row of the board (equivalently, the size of the Binomial distribution we are simulating with the board):
 
-```{r parameters}
+```{r}
 # these checks allow us to include this file at the end of binomial_approx_*.Rmd
 # to re-run this file using the output of the approximation
 if (!exists("n_draw")) n_draw = 50
@@ -75,7 +75,7 @@ one_frame = FALSE
 
 Now we can determine the dimensions of the board required:
 
-```{r dimensions}
+```{r}
 row_height = bin_width * row_ratio
 # ball width is just a bit smaller than the bins
 ball_width = bin_width * 0.9 # 14/15
@@ -89,7 +89,7 @@ total_height = 2445 # board_height + 15 * bin_width
 
 Next, we create slots the balls will fall into:
 
-```{r slots}
+```{r}
 slot_edges = seq(-(n_bin + 1)/2, (n_bin + 1)/2) * bin_width + board_mean
 
 # restrict ourselves to the predefined min/max x, if necessary
@@ -118,7 +118,7 @@ slots_df = data.frame(
 
 Next, we can create the grid of pins:
 
-```{r pins}
+```{r}
 pins_df = data.frame()
 for (i in 1:n_bin) {
   y = slot_height + (n_bin - i) * row_height
@@ -137,7 +137,7 @@ for (i in 1:n_bin) {
 
 As a sanity check, we'll verify the pin and slot locations:
 
-```{r base_plot}
+```{r}
 board_plot = ggplot() + 
   geom_segment(data = slots_df, aes(x = x, y = 0, xend = x, yend = height), size = 1) + 
   geom_point(aes(x, y), data = pins_df, shape = 1, color = "red") +
@@ -300,7 +300,7 @@ tweened_frames_df = frames_df %>%
 
 First, we need to set up the output folder to hold the PNG files that will contain the frames:
 
-```{r png_temp}
+```{r}
 png_dir = "png_temp"
 dir.create(png_dir, showWarnings = FALSE)
 unlink(list.files(png_dir, pattern = "*.png", full.names = TRUE))
@@ -308,7 +308,7 @@ unlink(list.files(png_dir, pattern = "*.png", full.names = TRUE))
 
 Then, we render all frame of the Galton board one at a time into PNG files in the above directory.
 
-```{r render_frames, message=FALSE, warning=FALSE, results=FALSE}
+```{r, message=FALSE, warning=FALSE, results=FALSE}
 x0 = seq(-n_bin/2, n_bin/2) * bin_width + board_mean
 x0 = x0[min(slot_edges) < x0 & x0 < max(slot_edges)]
 
@@ -406,7 +406,7 @@ for (i in seq_along(tweened_frames)) {
 
 Finally, we use `gifski()` to roll all the frames into an animated GIF:
 
-```{r render_gif, message=FALSE, warning=FALSE, results=FALSE}
+```{r, message=FALSE, warning=FALSE, results=FALSE}
 gif_name = paste0("galton_board-", to_snake_case(model_name), ".gif")
 
 gifski(
