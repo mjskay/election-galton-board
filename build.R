@@ -20,8 +20,7 @@ download.file(
 
 
 # Build the animations
-rmarkdown::render("binomial_approx_economist.Rmd")
-rmarkdown::render("binomial_approx_538.Rmd")
+rmarkdown::render("binomial_approx_both.Rmd")
 
 
 # Rebuild index.html

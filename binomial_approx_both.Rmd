@@ -1,0 +1,253 @@
+---
+title: "Binomial approximation to the Economist's prediction"
+author: "Matthew Kay"
+output: github_document
+---
+
+To build a Galton board for the Economist and 538 predictions, we need binomial distributions that can approximate
+the current prediction.s In this document we'll find such distributions.
+
+Basically, what we want is a bin width, number of bins, and
+a mean that we then throw into the Galton board renderer in [galton_board_quantile_ragg.Rmd](galton_board_quantile_ragg.Rmd).
+
+## Setup
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(Hmisc)
+library(ggdist)
+library(patchwork)
+
+theme_set(theme_ggdist())
+```
+
+## Data
+
+### 538
+
+We'll read in the data from 538, which can be obtained from the bottom of [this page](https://projects.fivethirtyeight.com/2020-election-forecast/). It contains predicted probabilities of Trump and Biden achieving each number of electoral votes:
+
+```{r}
+df_538 = read.csv("data/538/presidential_ev_probabilities_2020.csv")
+```
+
+From this we can plot a histogram of Biden's predicted probability of achieving each number of electoral votes (with 270 being a majority):
+
+```{r}
+col_269 = "#1b9e77"
+
+base_plot_538 = df_538 %>%
+  ggplot(aes(x = total_ev, y = evprob_chal)) +
+  geom_col(fill = "gray75") +
+  geom_vline(xintercept = 269, color = col_269, size = 1) +
+  annotate("label", x = 269, y = max(df_538$evprob_chal), label = "269", color = col_269, size = 3) +
+  xlab("Electoral votes for Biden") +
+  scale_y_continuous(breaks = NULL) +
+  ylab("") +
+  xlim(-1, 540) +
+  ggtitle("538")
+
+base_plot_538
+```
+
+### The Economist
+
+We'll also read in the data from the Economist, which can be obtained from the bottom of [this page](https://projects.economist.com/us-2020-forecast/president). It contains predicted probabilities of Trump and Biden achieving each number of electoral votes:
+
+```{r}
+df_econ = read.csv("data/economist/electoral_college_simulations.csv")
+```
+
+As before, we will plot a histogram of Biden's predicted probability of achieving each number of electoral votes (with 270 being a majority). We'll also do a side-by-side comparison:
+
+```{r}
+col_269 = "#1b9e77"
+
+base_plot_econ = df_econ %>%
+  ggplot(aes(x = dem_ev)) +
+  geom_histogram(aes(y = stat(density)), binwidth = 1, fill = "gray75") +
+  geom_vline(xintercept = 269, color = col_269, size = 1) +
+  annotate("label", x = 269, y = .05, label = "269", color = col_269, size = 3) +
+  xlab("Electoral votes for Biden") +
+  scale_y_continuous(breaks = NULL) +
+  ylab("") +
+  coord_cartesian(xlim = c(0, 540)) +
+  ggtitle("The Economist")
+
+base_plot_538 + base_plot_econ
+```
+
+## Normal approximation
+
+Let's approximate these distributions with a normal distribution by simply using the mean and variance of the predictive distribution:
+
+```{r}
+mean_ev_538 = wtd.mean(df_538$total_ev, weights = df_538$evprob_chal)
+# Must multiply by number of simulations as (normally 40,000 for 538)
+# as total N is used in the weighted variance calc
+var_ev_538 = wtd.var(df_538$total_ev, weights = df_538$evprob_chal * df_538$simulations)
+sd_ev_538 = sqrt(var_ev_538)
+
+mean_ev_econ = mean(df_econ$dem_ev)
+var_ev_econ = var(df_econ$dem_ev)
+sd_ev_econ = sd(df_econ$dem_ev)
+```
+
+And plot:
+
+```{r}
+col_normal = "#7570b3"
+
+normal_plot = function(base_plot, mean_ev, sd_ev) {
+  normal_density = tibble(x = 1:538, y = dnorm(x, mean_ev, sd_ev))
+  
+  base_plot + 
+    geom_line(aes(x = x, y = y), data = normal_density, color = col_normal, size = 1)
+}
+
+normal_plot(base_plot_538, mean_ev_538, sd_ev_538) +
+  normal_plot(base_plot_econ, mean_ev_econ, sd_ev_econ)
+```
+
+The Normal approximation looks decent. Let's continue down this train a bit and use binomial approximations to the Normal by finding a binomial distribution with the same variance and then shifting its location to match the above Normal distribution.
+
+We can use the fact that the variance of a Binomial distribution with probability 0.5 is equal to 1/4 the number of trials in the distribution to find the number of trials needed (which is the same as the height of the Galton board we would need to construct):
+
+```{r}
+bin_n_538 = round(4 * var_ev_538)
+bin_n_econ = round(4 * var_ev_econ)
+
+cat("538 bins:\t", bin_n_538, "\nEconomist bins:\t", bin_n_econ)
+```
+
+Those would be very large Galton boards! Leaving that aside for a moment, let's see how well they approximates the distributions:
+
+```{r}
+col_binom = "#d95f02"
+
+binom_plot = function(base_plot, mean_ev, sd_ev, bin_n) {
+  binom_mass = tibble(x = 0:538, y = dbinom(x + round(bin_n/2 - mean_ev), bin_n, 0.5))
+  normal_plot(base_plot, mean_ev, sd_ev) +
+    geom_step(aes(x = x, y = y), data = binom_mass, color = col_binom, direction = "mid", size = 1)
+}
+
+binom_plot(base_plot_538, mean_ev_538, sd_ev_538, bin_n_538) +
+  binom_plot(base_plot_econ, mean_ev_econ, sd_ev_econ, bin_n_econ)
+```
+
+The binomial distribution looks nearly identical to the Normal distribution here. However, like I said, it would require very large Galton boards to generate these distributions down to the single electoral vote level. So instead, let's use wider bins --- say, bins between 35 and 45 electoral votes wide. In fact, we'll pick a single bin width that we can use for both distirbutions that puts 269 as close to a bin boundary in both as we can, given the scaling/shifting of the distribution we will be doing: 
+
+```{r}
+candidate_bin_width = 35:45
+candidate_bin_n_538 = round(4 * var_ev_538 / candidate_bin_width^2)
+candidate_bin_n_econ = round(4 * var_ev_econ / candidate_bin_width^2)
+# minimize sum of squared distance between 269 and the nearest 
+# bin edge in both 538 and the economist's distribution
+bin_width = candidate_bin_width[which.min(
+  ((269/candidate_bin_width + candidate_bin_n_538/2 - mean_ev_538/candidate_bin_width) %% 1 - 0.5)^2 +
+  ((269/candidate_bin_width + candidate_bin_n_econ/2 - mean_ev_econ/candidate_bin_width) %% 1 - 0.5)^2
+)]
+bin_width
+```
+
+That gives us a bin width of `r bin_width`, leading to...
+
+```{r}
+bin_n_small_538 = round(4 * var_ev_538 / bin_width^2)
+bin_n_small_econ = round(4 * var_ev_econ / bin_width^2)
+
+cat("538 bins:\t", bin_n_small_538, "\nEconomist bins:\t", bin_n_small_econ)
+```
+
+Galton boards with a much more manageable number of bins. Let's check on the approximations:
+
+```{r}
+binom_plot_small = function(base_plot, mean_ev, sd_ev, bin_n) {
+  binom_mass_small = tibble(
+    x = 0:538, 
+    y = dbinom(round(x/bin_width + bin_n/2 - mean_ev/bin_width), bin_n, 0.5) / bin_width
+  )
+  
+  normal_plot(base_plot, mean_ev, sd_ev) +
+    geom_step(aes(x = x, y = y), data = binom_mass_small, color = col_binom, direction = "mid", size = 1)
+}
+
+binom_plot_small(base_plot_538, mean_ev_538, sd_ev_538, bin_n_small_538) +
+  binom_plot_small(base_plot_econ, mean_ev_econ, sd_ev_econ, bin_n_small_econ)
+```
+
+In case a bin boundary doesn't line up exactly at 269, we'll adjust the means a little bit so that it does. Since
+we've already picked a binning to minimize the distance between 269 and its closest bin boundary, this shouldn't
+require us to fudge the mean too much:
+
+```{r}
+mean_ev_adj_538 = mean_ev_538 + ((269 + bin_n_small_538*bin_width/2 - mean_ev_538) %% bin_width - bin_width/2)
+mean_ev_adj_econ = mean_ev_econ + ((269 + bin_n_small_econ*bin_width/2 - mean_ev_econ) %% bin_width - bin_width/2)
+
+cat(sep = "",
+"\t\tMean\tAdjusted mean\n538:\t\t", round(mean_ev_538, 1), "\t", 
+  mean_ev_adj_538, "\nEconomist:\t", round(mean_ev_econ, 1), "\t", mean_ev_adj_econ)
+```
+
+That should make a bin boundary fall on 269 without the approximation looking too bad:
+
+```{r}
+binom_plot_small(base_plot_538, mean_ev_adj_538, sd_ev_538, bin_n_small_538) +
+  binom_plot_small(base_plot_econ, mean_ev_adj_econ, sd_ev_econ, bin_n_small_econ)
+```
+
+## Build 538 board
+
+The final parameters for our approximation are:
+
+```{r}
+n_bin = bin_n_small_538
+board_mean = mean_ev_adj_538
+row_ratio = 2
+model_name = "538"
+
+cat(paste0(
+  "bins:      ", bin_n_small_538, "\n",
+  "bin width: ", bin_width, "\n",
+  "mean:      ", mean_ev_adj_538, "\n"
+))
+```
+
+And we can use these quantiles for the dotplot:
+
+```{r}
+# this is a dumb way to do this but it's good enough
+ev_samples = unlist(map2(df_538$total_ev, round(df_538$evprob_chal * 40000), rep))
+
+bin_values = as.vector(quantile(round((ev_samples - mean_ev_adj_538)/bin_width + bin_n_small_538/2), ppoints(50)))
+bin_values
+```
+
+```{r child = 'galton_board_quantile_ragg.Rmd'}
+```
+
+## Build Economist board
+
+The final parameters for our approximation are:
+
+```{r}
+n_bin = bin_n_small_econ
+board_mean = mean_ev_adj_econ
+row_ratio = 2
+model_name = "The Economist"
+
+cat(paste0(
+  "bins:      ", bin_n_small_econ, "\n",
+  "bin width: ", bin_width, "\n",
+  "mean:      ", mean_ev_adj_econ, "\n"
+))
+```
+
+```{r}
+n_draw = 50
+bin_values = as.vector(quantile(round((df_econ$dem_ev - mean_ev_adj_econ)/bin_width + bin_n_small_econ/2), ppoints(n_draw)))
+bin_values
+```
+
+```{r child = 'galton_board_quantile_ragg.Rmd'}
+```
