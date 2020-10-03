@@ -16,7 +16,11 @@ a mean that we then throw into the Galton board renderer in [galton_board_quanti
 library(tidyverse)
 library(Hmisc)
 library(ggdist)
+library(ragg)
 library(patchwork)
+library(gganimate)
+library(snakecase)
+library(plinko)     # devtools::install_github("mjskay/plinko")
 
 theme_set(theme_ggdist())
 ```
@@ -40,7 +44,7 @@ base_plot_538 = df_538 %>%
   ggplot(aes(x = total_ev, y = evprob_chal)) +
   geom_col(fill = "gray75") +
   geom_vline(xintercept = 269, color = col_269, size = 1) +
-  annotate("label", x = 269, y = max(df_538$evprob_chal), label = "269", color = col_269, size = 3) +
+  annotate("label", x = 269, y = .061, label = "269", color = col_269, size = 3) +
   xlab("Electoral votes for Biden") +
   scale_y_continuous(breaks = NULL) +
   ylab("") +
@@ -67,7 +71,7 @@ base_plot_econ = df_econ %>%
   ggplot(aes(x = dem_ev)) +
   geom_histogram(aes(y = stat(density)), binwidth = 1, fill = "gray75") +
   geom_vline(xintercept = 269, color = col_269, size = 1) +
-  annotate("label", x = 269, y = .05, label = "269", color = col_269, size = 3) +
+  annotate("label", x = 269, y = .061, label = "269", color = col_269, size = 3) +
   xlab("Electoral votes for Biden") +
   scale_y_continuous(breaks = NULL) +
   ylab("") +
@@ -110,6 +114,8 @@ normal_plot(base_plot_538, mean_ev_538, sd_ev_538) +
 ```
 
 The Normal approximation looks decent. Let's continue down this train a bit and use binomial approximations to the Normal by finding a binomial distribution with the same variance and then shifting its location to match the above Normal distribution.
+
+## Binomial approximation
 
 We can use the fact that the variance of a Binomial distribution with probability 0.5 is equal to 1/4 the number of trials in the distribution to find the number of trials needed (which is the same as the height of the Galton board we would need to construct):
 
@@ -176,6 +182,8 @@ binom_plot_small(base_plot_538, mean_ev_538, sd_ev_538, bin_n_small_538) +
   binom_plot_small(base_plot_econ, mean_ev_econ, sd_ev_econ, bin_n_small_econ)
 ```
 
+### Fudging the mean
+
 In case a bin boundary doesn't line up exactly at 269, we'll adjust the means a little bit so that it does. Since
 we've already picked a binning to minimize the distance between 269 and its closest bin boundary, this shouldn't
 require us to fudge the mean too much:
@@ -196,16 +204,46 @@ binom_plot_small(base_plot_538, mean_ev_adj_538, sd_ev_538, bin_n_small_538) +
   binom_plot_small(base_plot_econ, mean_ev_adj_econ, sd_ev_econ, bin_n_small_econ)
 ```
 
-## Build 538 board
+## Quantiles for the dotplot
+
+We want the distributions at the bottom of the board to be a 
+[quantile dotplot](https://github.com/mjskay/when-ish-is-my-bus/blob/master/quantile-dotplots.md)
+so that it is representative of the predictors' distributions. We'll use
+50 quantiles; i.e. a 50-dot dotplot:
+
+```{r}
+n_ball = 50
+
+# this is a dumb way to do this for 538 but it's good enough
+ev_samples_538 = unlist(map2(df_538$total_ev, round(df_538$evprob_chal * 40000), rep))
+ev_quantiles_538 = quantile(ev_samples_538, ppoints(n_ball))
+
+ev_quantiles_econ = quantile(df_econ$dem_ev, ppoints(n_ball))
+```
+
+Since both board will be side-by-side, we will also want to override the 
+automatic slot height calculation in `plinko_board()` so that both boards
+have slots of the same height. To do that, we need to take the height of the
+highest bin across both boards and add a bit of leeway:
+
+```{r}
+ev_bins_538 = round((ev_quantiles_538 - mean_ev_adj_538)/bin_width + bin_n_small_538/2)
+ev_bins_econ = round((ev_quantiles_econ - mean_ev_adj_econ)/bin_width + bin_n_small_econ/2)
+max_bin_height = max(table(ev_bins_538), table(ev_bins_econ))
+slot_height = (max_bin_height + 2) * bin_width * 0.9 # ball width is 0.9 * bin_width
+```
+
+## Create Plinko boards
+
+Finally, we can construct animated Plinko boards using my experimental 
+[plinko](https://mjskay.github.io/plinko/) package. This package handles 
+finding paths through the board and generating the animation for us.
+
+### 538
 
 The final parameters for our approximation are:
 
 ```{r}
-n_bin = bin_n_small_538
-board_mean = mean_ev_adj_538
-row_ratio = 2
-model_name = "538"
-
 cat(paste0(
   "bins:      ", bin_n_small_538, "\n",
   "bin width: ", bin_width, "\n",
@@ -213,29 +251,123 @@ cat(paste0(
 ))
 ```
 
-And we can use these quantiles for the dotplot:
+We can test the layout before building the animation:
+
+```{r, fig.height = 8, fig.width = 2.05}
+Biden_color = "#0571b0"
+Trump_color = "#ca0020"
+
+# dimensions we will use to override dims automatically calculated by 
+# plinko_board() so that both boards have the same dimensions
+total_height = 2445
+width_px = 205
+height_px = 800
+
+make_plinko_board = function(model_name, ...) {
+  plinko_board(..., 
+    bin_width = bin_width,
+    limits = c(0, 538), 
+    slot_height = slot_height
+  ) %>%
+    tween_balls(frame_mult = 4) %>%
+    modify_layer("pins", color = "gray50") %>%
+    modify_layer("balls", aes(fill = ifelse(region == "slot", ifelse(x <= 269, "Trump", "Biden"), "none"))) %>%
+    modify_coord(ylim = c(0, total_height), xlim = c(-45, 538 + 45)) %>%
+    add_layers(
+      geom_vline(xintercept = 269, color = "black", alpha = 0.15, size = 1),
+      annotate("text", 
+        x = 290, y = 0.95 * total_height, 
+        label = "Biden wins", hjust = 0, color = Biden_color
+      ),
+      annotate("text", 
+        x = 250, y = 0.95 * total_height,
+        label = "Trump wins", hjust = 1, color = Trump_color
+      ),
+      annotate("label", 
+        x = 269, y = 0.98 * total_height,
+        label = "269", hjust = 0.5, color = "gray50",
+        fontface = "bold"
+      ),
+      scale_fill_manual(
+        limits = c("none", "Biden", "Trump"),
+        values = c("gray45", Biden_color, Trump_color), 
+        guide = FALSE
+      ),
+      theme(
+        axis.title.x = element_text(hjust = 0, size = 10, color = "gray25"),
+        plot.title = element_text(hjust = 0.5),
+        plot.title.position = "plot"
+      ),
+      labs(
+        x = paste0("Electoral votes for Biden\n\nPresidential Plinko, ", format(Sys.Date(), "%b %d"), "\n", 
+          model_name, "'s model\n"),
+        y = NULL
+      ),
+      ggtitle(model_name)
+    )
+}
+
+set.seed(12345)
+board_538 = make_plinko_board(
+  model_name = "538",
+  ev_quantiles_538, 
+  n_bin = bin_n_small_538, 
+  center = mean_ev_adj_538
+)
+
+autoplot(board_538)
+```
+
+Looks good! And the final distribution looks plausible given the theoretical
+Binomial distribution. Let's build the animation:
 
 ```{r}
-# this is a dumb way to do this but it's good enough
-ev_samples = unlist(map2(df_538$total_ev, round(df_538$evprob_chal * 40000), rep))
-
-bin_values = as.vector(quantile(round((ev_samples - mean_ev_adj_538)/bin_width + bin_n_small_538/2), ppoints(50)))
-bin_values
+board_538 %>%
+  animate(width = width_px, height = height_px, fps = 30, end_pause = 6 * 30)
 ```
 
-```{r child = 'galton_board_quantile_ragg.Rmd'}
+And save it to a file:
+
+```{r}
+anim_save("boards/galton_board-538.gif")
 ```
 
-## Build Economist board
+We also want animations for each ball, so the website can have a "drop a random
+ball" button:
+
+```{r}
+make_single_ball_boards = function(model_name, ev_quantiles, ...) {
+  for (i in 1:n_ball) {
+    if (interactive()) cat("Building board", i, "\n")
+    animation = make_plinko_board(model_name, ev_quantiles[[i]], ...) %>%
+      animate(width = width_px, height = height_px, fps = 30, renderer = gganimate::gifski_renderer(loop = FALSE))
+    anim_save(paste0("boards/galton_board-", to_snake_case(model_name), "-", i, ".gif"), animation)
+  }
+}
+
+make_single_ball_boards(
+  model_name = "538",
+  ev_quantiles_538,
+  n_bin = bin_n_small_538, 
+  center = mean_ev_adj_538
+)
+```
+
+Finally, we'll need a blank board to show before balls are dropped:
+
+```{r}
+agg_png("boards/galton_board-538-blank.png", width = width_px, height = height_px, res = 100)
+board_538 %>% 
+  modify_layer("balls", fill = NA) %>% 
+  autoplot(show_paths = FALSE, show_dist = FALSE)
+dev.off()
+```
+
+### The Economist
 
 The final parameters for our approximation are:
 
 ```{r}
-n_bin = bin_n_small_econ
-board_mean = mean_ev_adj_econ
-row_ratio = 2
-model_name = "The Economist"
-
 cat(paste0(
   "bins:      ", bin_n_small_econ, "\n",
   "bin width: ", bin_width, "\n",
@@ -243,11 +375,55 @@ cat(paste0(
 ))
 ```
 
-```{r}
-n_draw = 50
-bin_values = as.vector(quantile(round((df_econ$dem_ev - mean_ev_adj_econ)/bin_width + bin_n_small_econ/2), ppoints(n_draw)))
-bin_values
+As before, we'll preview the layout first:
+
+```{r, fig.height = 8, fig.width = 2.05}
+set.seed(12345)
+board_econ = make_plinko_board(
+  model_name = "The Economist",
+  ev_quantiles_econ, 
+  n_bin = bin_n_small_econ, 
+  center = mean_ev_adj_econ
+)
+
+autoplot(board_econ)
 ```
 
-```{r child = 'galton_board_quantile_ragg.Rmd'}
+And then let's build the animation:
+
+```{r}
+# because the 538 board is taller we need to add a few extra frames to the pause
+# of the Economist's board so they loop at the same time
+extra_frames = n_frames(board_538) - n_frames(board_econ)
+
+board_econ %>%
+  animate(width = width_px, height = height_px, fps = 30, end_pause = 6 * 30 + extra_frames)
+```
+
+And save it to a file:
+
+```{r}
+anim_save("boards/galton_board-the_economist.gif")
+```
+
+We also want animations for each ball, so the website can have a "drop a random
+ball" button:
+
+```{r}
+make_single_ball_boards(
+  model_name = "The Economist",
+  ev_quantiles_econ,
+  n_bin = bin_n_small_econ, 
+  center = mean_ev_adj_econ
+)
+```
+
+Finally, we'll need a blank board to show before balls are dropped:
+
+```{r}
+agg_png("boards/galton_board-the_economist-blank.png", width = width_px, height = height_px, res = 100)
+board_econ %>% 
+  modify_layer("balls", fill = NA) %>% 
+  autoplot(show_paths = FALSE, show_dist = FALSE)
+dev.off()
 ```

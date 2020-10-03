@@ -8,6 +8,37 @@ output: distill::distill_article
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
+<script type="text/javascript">
+function make_single_ball_image_cache(model) {
+  cache = []
+  for (ball = 0; ball < 50; ball++) {
+    image_name = "boards/galton_board-" + model + "-" + (ball + 1) + ".gif"
+    console.log(image_name)
+    cache[ball] = new Image()
+    cache[ball].src = image_name
+  }
+  return cache
+}
+single_ball_images = {
+  "538": make_single_ball_image_cache("538"),
+  "econ": make_single_ball_image_cache("the_economist")
+}
+
+function random_int(max) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+
+function drop_ball() {
+  document.getElementById("board_538").src = "boards/galton_board-538-blank.png";
+  document.getElementById("board_538").src = single_ball_images["538"][random_int(50)].src;
+  document.getElementById("board_econ").src = "boards/galton_board-the_economist-blank.png";
+  document.getElementById("board_econ").src = single_ball_images["econ"][random_int(50)].src;
+}
+function drop_all_balls() {
+  document.getElementById("board_538").src = window.src_538;
+  document.getElementById("board_econ").src = window.src_econ;
+}
+</script>
 <style type="text/css">
 d-footnote {
   margin-left: -0.5ex;
@@ -17,7 +48,15 @@ d-footnote {
   max-width: 205px;
 }
 </style>
-<img class="plinko" src="galton_board-538.gif"><img class="plinko" src="galton_board-the_economist.gif">
+
+<img id="board_538" class="plinko" src="boards/galton_board-538.gif"><img id="board_econ" class="plinko" src="boards/galton_board-the_economist.gif">
+
+<script type="text/javascript">
+window.src_538 = document.getElementById("board_538").src;
+window.src_econ = document.getElementById("board_econ").src;
+</script>
+
+<a href="javascript:drop_ball();">**Drop one ball**</a> | <a href="javascript:drop_all_balls();">**Drop all balls**</a>
 
 What will the outcome of the 2020 US Presidential Election be? Forecasters
 build models on top of polling data and historical voting patterns to
@@ -27,7 +66,9 @@ uncertainty and translates it into Plinko boards with similar uncertainty,
 so that you can experience just how uncertain predictors' forecasts are.
 
 How certain would you be in the outcome if you dropped a ball from a Plinko board
-the height of the one for the Economist's prediction? How about 538's?
+the height of the one for the Economist's prediction? How about 538's? Try 
+<a href="javascript:drop_ball();">**dropping one ball**</a> a few 
+times and see how you feel about the uncertainty.
 
 <style type="text/css">
 .videoWrapper {

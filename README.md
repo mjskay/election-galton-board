@@ -11,17 +11,19 @@ which are nice enough to open their data.
 
 The Galton boards currently look like this:
 
-![](galton_board-538.gif)
-![](galton_board-the_economist.gif)
+![](boards/galton_board-538.gif)
+![](boards/galton_board-the_economist.gif)
 
 To download the latest versions of the Economist's and 538's models and re-render
 everything, run [build.R](build.R).
 
 The code for determining the binomial approximations to each modeler's predictions 
-is in [binomial_approx_both.md](binomial_approx_both.md) ([source Rmd](binomial_approx_both.Rmd)).
+and then building the Plinko boards is in [binomial_approx_both.md](binomial_approx_both.md)
+([source Rmd](binomial_approx_both.Rmd)). It uses my experimental [plinko](https://mjskay.github.io/plinko/) 
+R package for constructing animated Plinko boards.
 
-The code for building the Galton boards is in [galton_board_quantile_ragg.Rmd](galton_board_quantile_ragg.Rmd).
-This code is called from the above `binomial_approx_both.Rmd` file.
+An older version of the code (pre-[plinko](https://mjskay.github.io/plinko/)) 
+for building the Galton boards is in [galton_board_quantile_ragg.Rmd](galton_board_quantile_ragg.Rmd).
 
 The datasets are copyright their respective owners (see links above) and the
 rest of the code in this repo is licensed under the MIT license.
