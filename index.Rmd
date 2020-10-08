@@ -2,10 +2,17 @@
 title: "Presidential Plinko"
 date: "`r Sys.Date()`"
 output: distill::distill_article
+preview: https://presidential-plinko.com/preview.png
+twitter:
+  creator: "@mjskay"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(metathis)
+meta() %>%
+  meta_description("Plinko boards for forecasts of the 2020 US presidential election") %>%
+  meta_social(image = "https://presidential-plinko.com/preview.png")
 ```
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93322-6"></script>
