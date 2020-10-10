@@ -1,14 +1,14 @@
 ---
-title: "Binomial approximation to the Economist's prediction"
+title: "Binomial approximation to 538 and the Economist's predictions"
 author: "Matthew Kay"
 output: github_document
 ---
 
-To build a Galton board for the Economist and 538 predictions, we need binomial distributions that can approximate
-the current prediction.s In this document we'll find such distributions.
+To build a Plinko board / Galton board for the Economist and 538 predictions, we need binomial distributions that can approximate
+the current predictions. In this document we'll find such distributions.
 
 Basically, what we want is a bin width, number of bins, and
-a mean that we then throw into the Galton board renderer in [galton_board_quantile_ragg.Rmd](galton_board_quantile_ragg.Rmd).
+a mean that we then throw into the Plinko board simulator from [plinko](https://mjskay.github.io/plinko/).
 
 ## Setup
 
@@ -222,7 +222,7 @@ ev_quantiles_econ = quantile(df_econ$dem_ev, ppoints(n_ball))
 ```
 
 Since both board will be side-by-side, we will also want to override the 
-automatic slot height calculation in `plinko_board()` so that both boards
+automatic slot height calculation in `plinko::plinko_board()` so that both boards
 have slots of the same height. To do that, we need to take the height of the
 highest bin across both boards and add a bit of leeway:
 
