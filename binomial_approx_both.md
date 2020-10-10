@@ -150,8 +150,8 @@ bin_n_econ = round(4 * var_ev_econ)
 cat("538 bins:\t", bin_n_538, "\nEconomist bins:\t", bin_n_econ)
 ```
 
-    ## 538 bins:     19861 
-    ## Economist bins:   10262
+    ## 538 bins:     19333 
+    ## Economist bins:   9677
 
 Those would be very large Galton boards\! Leaving that aside for a
 moment, let’s see how well they approximates the distributions:
@@ -193,9 +193,9 @@ bin_width = candidate_bin_width[which.min(
 bin_width
 ```
 
-    ## [1] 37
+    ## [1] 38
 
-That gives us a bin width of 37, leading to…
+That gives us a bin width of 38, leading to…
 
 ``` r
 bin_n_small_538 = round(4 * var_ev_538 / bin_width^2)
@@ -204,7 +204,7 @@ bin_n_small_econ = round(4 * var_ev_econ / bin_width^2)
 cat("538 bins:\t", bin_n_small_538, "\nEconomist bins:\t", bin_n_small_econ)
 ```
 
-    ## 538 bins:     15 
+    ## 538 bins:     13 
     ## Economist bins:   7
 
 Galton boards with a much more manageable number of bins. Let’s check on
@@ -244,8 +244,8 @@ cat(sep = "",
 ```
 
     ##      Mean    Adjusted mean
-    ## 538:     342.6   343
-    ## Economist:   342 343
+    ## 538:     343.6   345
+    ## Economist:   343.9   345
 
 That should make a bin boundary fall on 269 without the approximation
 looking too bad:
@@ -304,9 +304,9 @@ cat(paste0(
 ))
 ```
 
-    ## bins:      15
-    ## bin width: 37
-    ## mean:      343
+    ## bins:      13
+    ## bin width: 38
+    ## mean:      345
 
 We can test the layout before building the animation:
 
@@ -440,8 +440,8 @@ cat(paste0(
 ```
 
     ## bins:      7
-    ## bin width: 37
-    ## mean:      343
+    ## bin width: 38
+    ## mean:      345
 
 As before, we’ll preview the layout first:
 
