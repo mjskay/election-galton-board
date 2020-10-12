@@ -170,10 +170,18 @@ reasonable to me.]
 
 ## How does this work?
 
-The short version is, I approximate each forecaster's predictive distribution
-with a scaled-and-shifted binomial distribution, which ultimately determines
+The short version is, I determine the height of each board based on how uncertain
+each forecaster is about how many electoral votes Biden will get.
+I then drop a number of balls through the board
+to illustrate that uncertainty:
+
+<img style="width: 100%; max-width: 410px;" src="galton_board-explainer.png">
+
+The slightly longer (more technical) version is, I approximate each
+forecaster's predictive distribution
+with a scaled-and-shifted binomial distribution, which determines
 the height of each board. I then determine plausible paths through the board
-that could have lead to the final predictive distribution, which is shown as
+that could have led to the final predictive distribution, which is shown as
 a [quantile dotplot](https://mucollective.northwestern.edu/project/when-ish-is-my-bus).
 Thus, while the output looks random, the final distribution is exactly the
 forecaster's published distribution, down to the resolution of the dotplot.
