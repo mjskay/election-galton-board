@@ -106,24 +106,25 @@ times and see how you feel about the uncertainty.
 </video>
 </div>
 
-## Are you affiliated with 538 or the Economist?
+## How does this work?
 
-No. I am faculty at Northwestern University, where I study uncertainty visualization, 
-amongst other things. You can learn more about me [here](http://www.mjskay.com/) or check out the 
-[Midwest Uncertainty Collective](https://mucollective.northwestern.edu/), a lab 
-I co-direct with Jessica Hullman.
+The short version is, I determine the height of each board based on how uncertain
+each forecaster is about how many electoral votes Biden will get.
+I then drop a number of balls through the board
+to illustrate that uncertainty:
 
-I am fortunate to be able to take advantage of the fact that both forecasters release
-their model outputs publicly. For more details on each forecaster's model and
-predictions, see [538's forecast](https://projects.fivethirtyeight.com/2020-election-forecast/)
-or [the Economist's forecast](https://projects.economist.com/us-2020-forecast/president).
+<img style="width: 100%; max-width: 410px;" src="galton_board-explainer.png">
 
-These forecasters have put an immense amount of work into their models and
-visualizations. Both have done an excellent job this year in their uncertainty
-communication. I recommend checking out other posts and discussions about 
-[their visualizations](https://fivethirtyeight.com/features/how-we-designed-the-look-of-our-2020-forecast/)
-or [their models](https://statmodeling.stat.columbia.edu/2020/08/27/florida-comparing-economist-and-fivethirtyeight-forecasts/). 
-I am merely experimenting with one less-used visualization approach here.
+The slightly longer (more technical) version is, I approximate each
+forecaster's predictive distribution
+with a scaled-and-shifted binomial distribution, which determines
+the height of each board. I then determine plausible paths through the board
+that could have led to the final predictive distribution, which is shown as
+a [quantile dotplot](https://mucollective.northwestern.edu/project/when-ish-is-my-bus).
+Thus, while the output looks random, the final distribution is exactly the
+forecaster's published distribution, down to the resolution of the dotplot.
+Full details of the methodology and source code are 
+[on Github](https://github.com/mjskay/election-galton-board).
 
 ## Why did you make this?
 
@@ -168,25 +169,24 @@ and I decided *Presidential Plinko* would be a good name for this site.^[Besides
 which, Sir Francis Galton was a noted eugenicist, so naming fewer things after him seems
 reasonable to me.]
 
-## How does this work?
+## Are you affiliated with 538 or the Economist?
 
-The short version is, I determine the height of each board based on how uncertain
-each forecaster is about how many electoral votes Biden will get.
-I then drop a number of balls through the board
-to illustrate that uncertainty:
+No. I am faculty at Northwestern University, where I study uncertainty visualization, 
+amongst other things. You can learn more about me [here](http://www.mjskay.com/) or check out the 
+[Midwest Uncertainty Collective](https://mucollective.northwestern.edu/), a lab 
+I co-direct with Jessica Hullman.
 
-<img style="width: 100%; max-width: 410px;" src="galton_board-explainer.png">
+I am fortunate to be able to take advantage of the fact that both forecasters release
+their model outputs publicly. For more details on each forecaster's model and
+predictions, see [538's forecast](https://projects.fivethirtyeight.com/2020-election-forecast/)
+or [the Economist's forecast](https://projects.economist.com/us-2020-forecast/president).
 
-The slightly longer (more technical) version is, I approximate each
-forecaster's predictive distribution
-with a scaled-and-shifted binomial distribution, which determines
-the height of each board. I then determine plausible paths through the board
-that could have led to the final predictive distribution, which is shown as
-a [quantile dotplot](https://mucollective.northwestern.edu/project/when-ish-is-my-bus).
-Thus, while the output looks random, the final distribution is exactly the
-forecaster's published distribution, down to the resolution of the dotplot.
-Full details of the methodology and source code are 
-[in the Github repository](https://github.com/mjskay/election-galton-board).
+These forecasters have put an immense amount of work into their models and
+visualizations. Both have done an excellent job this year in their uncertainty
+communication. I recommend checking out other posts and discussions about 
+[their visualizations](https://fivethirtyeight.com/features/how-we-designed-the-look-of-our-2020-forecast/)
+or [their models](https://statmodeling.stat.columbia.edu/2020/08/27/florida-comparing-economist-and-fivethirtyeight-forecasts/). 
+I am merely experimenting with one less-used visualization approach here.
 
 ## Author {.appendix}
 
