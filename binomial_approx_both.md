@@ -1,14 +1,14 @@
-Binomial approximation to the Economist’s prediction
+Binomial approximation to 538 and the Economist’s predictions
 ================
 Matthew Kay
 
-To build a Galton board for the Economist and 538 predictions, we need
-binomial distributions that can approximate the current prediction.s In
-this document we’ll find such distributions.
+To build a Plinko board / Galton board for the Economist and 538
+predictions, we need binomial distributions that can approximate the
+current predictions. In this document we’ll find such distributions.
 
 Basically, what we want is a bin width, number of bins, and a mean that
-we then throw into the Galton board renderer in
-[galton\_board\_quantile\_ragg.Rmd](galton_board_quantile_ragg.Rmd).
+we then throw into the Plinko board simulator from
+[plinko](https://mjskay.github.io/plinko/).
 
 ## Setup
 
@@ -20,6 +20,7 @@ library(ragg)
 library(patchwork)
 library(gganimate)
 library(snakecase)
+library(ggtext)
 library(plinko)     # devtools::install_github("mjskay/plinko")
 
 theme_set(theme_ggdist())
@@ -150,8 +151,8 @@ bin_n_econ = round(4 * var_ev_econ)
 cat("538 bins:\t", bin_n_538, "\nEconomist bins:\t", bin_n_econ)
 ```
 
-    ## 538 bins:     19333 
-    ## Economist bins:   9677
+    ## 538 bins:     18607 
+    ## Economist bins:   10049
 
 Those would be very large Galton boards\! Leaving that aside for a
 moment, let’s see how well they approximates the distributions:
@@ -244,8 +245,8 @@ cat(sep = "",
 ```
 
     ##      Mean    Adjusted mean
-    ## 538:     343.6   345
-    ## Economist:   343.9   345
+    ## 538:     345.8   345
+    ## Economist:   340.8   345
 
 That should make a bin boundary fall on 269 without the approximation
 looking too bad:
@@ -275,9 +276,10 @@ ev_quantiles_econ = quantile(df_econ$dem_ev, ppoints(n_ball))
 ```
 
 Since both board will be side-by-side, we will also want to override the
-automatic slot height calculation in `plinko_board()` so that both
-boards have slots of the same height. To do that, we need to take the
-height of the highest bin across both boards and add a bit of leeway:
+automatic slot height calculation in `plinko::plinko_board()` so that
+both boards have slots of the same height. To do that, we need to take
+the height of the highest bin across both boards and add a bit of
+leeway:
 
 ``` r
 ev_bins_538 = round((ev_quantiles_538 - mean_ev_adj_538)/bin_width + bin_n_small_538/2)
@@ -502,3 +504,98 @@ dev.off()
 
     ## png 
     ##   2
+
+## Explainer
+
+Finally, we’ll create a static explainer plot.
+
+``` r
+mean_color = "#7570b3"
+var_color = "#d95f02"
+height_color = "#1b9e77"
+arrow_ = arrow(length = unit(6, "points"), type = "closed")
+annotate_segment_ = function(...) annotate("segment", size = 1, linejoin = "mitre", ...)
+annotate_richtext_ = function(...) annotate("richtext", 
+  hjust = 0, label.color = NA, label.padding = unit(c(0, 0, 0, 0), "lines"), ...
+)
+
+pin_bottom = min(pins(board_econ)$y)
+pin_top = max(pins(board_econ)$y)
+spread_min = mean_ev_adj_econ - bin_width * bin_n_small_econ/2
+spread_max = mean_ev_adj_econ + bin_width * bin_n_small_econ/2
+spread_y = pin_bottom + 25
+last_ball = balls(board_econ) %>% filter(x == max(x), y == min(y))
+
+board_econ %>%
+  modify_coord(xlim = c(-45, 650*2)) %>%
+  autoplot(show_dist = FALSE) +
+  annotate_richtext_(
+    x = mean_ev_adj_econ, y = board_econ$total_height + 100, 
+    label = paste0(
+      "Balls are dropped at the<br>point corresponding to the<br>",
+      "<strong style='color:", mean_color, ";'>average number of electoral<br>",
+      "votes</strong> (EVs) predicted for Biden."
+    ),
+    vjust = 0
+  ) +
+  annotate_segment_(
+    x = mean_ev_adj_econ, y = board_econ$total_height + 100 - 15, 
+    xend = mean_ev_adj_econ, yend = board_econ$total_height - 75,
+    arrow = arrow_, color = mean_color
+  ) +
+  annotate_segment_(
+    x = 600, y = pin_bottom,
+    xend = 600, yend = pin_top,
+    color = height_color
+  ) +
+  annotate_segment_(
+    x = 600 - 25, y = c(pin_top, pin_bottom),
+    xend = 600 + 25, yend = c(pin_top, pin_bottom),
+    color = height_color
+  ) +
+  annotate_richtext_(
+    x = 650, y = pin_top,
+    label = paste0(
+      "The <strong style='color:", height_color, ";'>height of the board</strong><br>",
+      "is chosen so that the<br>",
+      "<strong style='color:", var_color, ";'>spread</strong> of the balls after<br>",
+      "falling through the board<br>",
+      "matches the forecaster's<br>",
+      "uncertainty in how many<br>",
+      "EVs Biden will get.<br><br>"
+    ),
+    vjust = 1
+  ) +
+  annotate_segment_(
+    x = spread_min, y = spread_y,
+    xend = spread_max, yend = spread_y,
+    color = var_color,
+  ) +
+  annotate_segment_(
+    x = c(spread_min, spread_max), y = spread_y - 25,
+    xend = c(spread_min, spread_max), yend = spread_y + 25,
+    color = var_color
+  ) +
+  annotate_richtext_(
+    x = 650, y = 0,
+    label = paste0(
+      "Each ball is <strong>one possible<br>",
+      "outcome</strong> of the election.<br><br>",
+      "When a ball lands above 269,<br>",
+      "<strong style='color:", Biden_color, "';>Biden wins.</strong> Below 269,<br>",
+      "<strong style='color:", Trump_color, "';>Trump wins.</strong> The proportion<br>",
+      "of balls above 269 shows<br>",
+      "Biden's chance of winning."
+    ),
+    vjust = 0
+  ) +
+  ggtitle("How does Presidential Plinko work?") +
+  scale_x_continuous(breaks = c(0, 200, 400)) +
+  annotate("segment", x = -50, y = 0, xend = 538 + 50, yend = 0, size = 1, color = "gray75") +
+  theme(
+    axis.line.x = element_blank(),
+    plot.title = element_text(hjust = 0)
+  )
+```
+
+![](binomial_approx_both_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
