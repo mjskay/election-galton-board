@@ -13,7 +13,9 @@ a mean that we then throw into the Plinko board simulator from [plinko](https://
 ## Setup
 
 ```{r message=FALSE, warning=FALSE}
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(purrr)
 library(Hmisc)
 library(ggdist)
 library(ragg)

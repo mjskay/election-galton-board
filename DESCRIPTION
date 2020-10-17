@@ -1,5 +1,7 @@
 Imports:
-  tidyverse,
+  purrr,
+  dplyr,
+  tidyr,
   Hmisc,
   ggdist,
   ragg,
