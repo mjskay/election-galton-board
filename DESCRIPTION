@@ -10,6 +10,7 @@ Imports:
   metathis,
   knitr,
   distill,
-  plinko
+  plinko,
+  gifski
 Remotes:
   mjskay/plinko
