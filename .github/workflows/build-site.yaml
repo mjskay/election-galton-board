@@ -1,6 +1,8 @@
 on:
-  push:
-    branches: actions
+  schedule:
+    - cron: '0 14 * * *'
+  # push:
+  #   branches: actions
 
 name: build-site
 
