@@ -1,0 +1,15 @@
+Imports:
+  tidyverse,
+  Hmisc,
+  ggdist,
+  ragg,
+  patchwork,
+  gganimate,
+  snakecase,
+  ggtext,
+  metathis,
+  knitr,
+  distill,
+  plinko
+Remotes:
+  mjskay/plinko
