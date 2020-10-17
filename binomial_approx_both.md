@@ -151,8 +151,8 @@ bin_n_econ = round(4 * var_ev_econ)
 cat("538 bins:\t", bin_n_538, "\nEconomist bins:\t", bin_n_econ)
 ```
 
-    ## 538 bins:     18210 
-    ## Economist bins:   9382
+    ## 538 bins:     17885 
+    ## Economist bins:   9715
 
 Those would be very large Galton boards\! Leaving that aside for a
 moment, let’s see how well they approximates the distributions:
@@ -245,8 +245,8 @@ cat(sep = "",
 ```
 
     ##      Mean    Adjusted mean
-    ## 538:     346.4   343
-    ## Economist:   341.3   343
+    ## 538:     345.8   343
+    ## Economist:   338.5   343
 
 That should make a bin boundary fall on 269 without the approximation
 looking too bad:
@@ -426,8 +426,8 @@ board_538 %>%
 dev.off()
 ```
 
-    ## png 
-    ##   2
+    ## quartz_off_screen 
+    ##                 2
 
 ### The Economist
 
@@ -502,8 +502,8 @@ board_econ %>%
 dev.off()
 ```
 
-    ## png 
-    ##   2
+    ## quartz_off_screen 
+    ##                 2
 
 ## Explainer
 
