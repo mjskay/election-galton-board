@@ -6,7 +6,7 @@ name: build-site
 
 jobs:
   build-site:
-    runs-on: ubuntu-16.04
+    runs-on: windows-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
