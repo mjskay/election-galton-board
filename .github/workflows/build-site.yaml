@@ -49,7 +49,7 @@ jobs:
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git branch -D gh-pages
+          git branch -D gh-pages &>/dev/null || true
           git checkout --orphan gh-pages
           Rscript build.R
           git commit -a -m 'update site'
