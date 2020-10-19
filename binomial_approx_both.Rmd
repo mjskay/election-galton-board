@@ -397,7 +397,7 @@ And then let's build the animation:
 ```{r}
 # because the 538 board is taller we need to add a few extra frames to the pause
 # of the Economist's board so they loop at the same time
-extra_frames = n_frames(board_538) - n_frames(board_econ)
+extra_frames = n_frame(board_538) - n_frame(board_econ)
 
 board_econ %>%
   animate(width = width_px, height = height_px, fps = 30, end_pause = 6 * 30 + extra_frames)
