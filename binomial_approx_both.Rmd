@@ -96,8 +96,12 @@ var_ev_538 = wtd.var(df_538$total_ev, weights = df_538$evprob_chal * df_538$simu
 sd_ev_538 = sqrt(var_ev_538)
 
 mean_ev_econ = mean(df_econ$dem_ev)
-var_ev_econ = var(df_econ$dem_ev)
-sd_ev_econ = sd(df_econ$dem_ev)
+# var_ev_econ = var(df_econ$dem_ev)
+# sd_ev_econ = sd(df_econ$dem_ev)
+# using mad instead of sd since it seems to do a bit 
+# better at making an okay approx on the economist distribution
+sd_ev_econ = mad(df_econ$dem_ev)
+var_ev_econ = sd_ev_econ^2
 ```
 
 And plot:
