@@ -62,7 +62,23 @@ d-footnote {
   width: 50%;
   max-width: 205px;
 }
+#board_live {
+  .width: 100%;
+  max-width: 550px;
+}
 </style>
+
+<img id="board_live" src="boards/live_galton_board.gif">
+
+<script type="text/javascript">
+window.live_count = 0
+setInterval(function() {
+  window.live_count += 1;
+  document.getElementById("board_live").src = "boards/live_galton_board.gif?" + window.live_count
+}, 300000); // 5 minutes
+</script>
+
+## Pre-election predictions
 
 <img id="board_538" class="plinko" src="boards/galton_board-538.gif"><img id="board_econ" class="plinko" src="boards/galton_board-the_economist.gif">
 
