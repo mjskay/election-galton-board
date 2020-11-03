@@ -78,7 +78,24 @@ setInterval(function() {
 }, 300000); // 5 minutes
 </script>
 
-## Pre-election predictions
+The above animation shows balls continuously dropped through a Plinko board whose height
+roughly matches the uncertainty in [the Economist's](https://projects.economist.com/us-2020-forecast/president) 
+election prediction model, [given the states that have been called so far](https://twitter.com/gelliottmorris/status/1322589664797229057?s=20).
+If you leave your browser open the animation
+will update automatically when new calls are made.
+
+**Why "Semi-Live"?** I will update the board as [other](https://www.nytimes.com/live/2020/11/03/us/election-day) 
+[outlets](https://edition.cnn.com/election/2020/results/president)
+[call](https://www.bloomberg.com/graphics/2020-us-election-results)
+[states](https://www.washingtonpost.com/elections/). My speed at
+updating the board will naturally lag behind others (I am, after all, just one person). The purpose of
+this visualization is to communicate uncertainty as returns come in, not to be the first
+one to call the election.
+
+For more information about how the Plinko board represents uncertainty, or for predictions made
+from polling data before election day, see below.
+
+## Pre-election day predictions
 
 <img id="board_538" class="plinko" src="boards/galton_board-538.gif"><img id="board_econ" class="plinko" src="boards/galton_board-the_economist.gif">
 

@@ -300,7 +300,9 @@ make_plinko_board = function(model_name, ...) {
         values = c("gray45", Biden_color, Trump_color), 
         guide = FALSE
       ),
+      theme_ggdist(),
       theme(
+        axis.line.y = element_blank(),
         axis.title.x = element_text(hjust = 0, size = 10, color = "gray25"),
         plot.title = element_text(hjust = 0.5),
         plot.title.position = "plot"
@@ -330,7 +332,7 @@ Binomial distribution. Let's build the animation:
 
 ```{r}
 board_538 %>%
-  animate(width = width_px, height = height_px, fps = 30, end_pause = 6 * 30)
+  animate(width = width_px, height = height_px, fps = 30, end_pause = 6 * 30, cores = 7)
 ```
 
 And save it to a file:
@@ -347,7 +349,7 @@ make_single_ball_boards = function(model_name, ev_quantiles, ...) {
   for (i in 1:n_ball) {
     if (interactive()) cat("Building board", i, "\n")
     animation = make_plinko_board(model_name, ev_quantiles[[i]], ...) %>%
-      animate(width = width_px, height = height_px, fps = 30, renderer = gganimate::gifski_renderer(loop = FALSE))
+      animate(width = width_px, height = height_px, fps = 30, renderer = gganimate::gifski_renderer(loop = FALSE), cores = 7)
     anim_save(paste0("boards/galton_board-", to_snake_case(model_name), "-", i, ".gif"), animation)
   }
 }
@@ -404,7 +406,7 @@ And then let's build the animation:
 extra_frames = n_frame(board_538) - n_frame(board_econ)
 
 board_econ %>%
-  animate(width = width_px, height = height_px, fps = 30, end_pause = 6 * 30 + extra_frames)
+  animate(width = width_px, height = height_px, fps = 30, end_pause = 6 * 30 + extra_frames, cores = 7)
 ```
 
 And save it to a file:

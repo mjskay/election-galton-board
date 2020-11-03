@@ -41,8 +41,8 @@ names(ev)
 And we wrap up the distribution of predicted EVs using `update_prob()`:
 
 ```{r}
-biden_states = c("CA", "NY")
-trump_states = c("ND", "WV")
+biden_states = c()
+trump_states = c()
 
 df_econ = data.frame(dem_ev = update_prob(
   biden_states = biden_states,
@@ -188,7 +188,7 @@ so that it is representative of the predictors' distributions. We'll use
 50 quantiles; i.e. a 50-dot dotplot:
 
 ```{r}
-n_ball = 50
+n_ball = 40
 
 ev_quantiles_econ = quantile(df_econ$dem_ev, ppoints(n_ball))
 ```
@@ -218,21 +218,33 @@ Trump_color = "#ca0020"
 # dimensions we will use to override dims automatically calculated by 
 # plinko_board() so that both boards have the same dimensions
 total_height = 1600
+slot_height = 566
 width_px = 550
 height_px = 550
 
 format_state_list = function(states) {
-  paste(stringi::stri_wrap(paste(states, collapse = " "), width = 30, indent = 5), collapse = "<br>")
+  if (is.null(states)) {
+    "No calls yet"
+  } else {
+    paste(stringi::stri_wrap(paste(sort(states), collapse = " "), width = 30, indent = 5), collapse = "<br>")
+  }
 }
 
 make_plinko_board = function(model_name, ...) {
   plinko_board(..., 
     bin_width = bin_width,
-    limits = c(0, 538)
+    limits = c(0, 538),
+    slot_height = slot_height,
+    frames_till_drop = bin_n_small_econ + 4,
+    stack = FALSE,
   ) %>%
     tween_balls(frame_mult = 2) %>%
     modify_layer("pins", color = "gray50") %>%
-    modify_layer("balls", aes(fill = ifelse(region == "slot", ifelse(x <= 269, "Trump", "Biden"), "none"))) %>%
+    modify_layer("balls", aes(fill = 
+      ifelse(stopped_for > 2, "done",
+      ifelse(region != "slot", "none",
+      ifelse(x <= 269, "Trump", "Biden")))
+    )) %>%
     modify_coord(ylim = c(0, total_height), xlim = c(-45, -45 + total_height)) %>%
     add_layers(
       geom_vline(xintercept = 269, color = "black", alpha = 0.15, size = 1),
@@ -252,7 +264,7 @@ make_plinko_board = function(model_name, ...) {
       annotate("richtext",
         x = 650, y = 0,
         label = paste0(
-          "<strong style='color: black;'>Presidential-Plinko.com Live Board</strong><br><br>",
+          "<strong style='color: black;'>Presidential-Plinko.com Semi-Live Board</strong><br><br>",
           "Updated ", format(Sys.time(), format = "%b %d %I:%M %p", tz = "EST", usetz = TRUE), "<br><br>",
           "Based on the Economist's model<br>and these state-level calls:<br><br>",
           "Biden: ", format_state_list(biden_states), "<br><br>",
@@ -260,20 +272,28 @@ make_plinko_board = function(model_name, ...) {
           "Each ball is <strong>one possible outcome</strong> of the<br>",
           "election. When a ball lands above 269,<br>",
           "<strong style='color:", Biden_color, "';>Biden wins.</strong> When a ball lands below 269,<br>",
-          "<strong style='color:", Trump_color, "';>Trump wins.</strong> The proportion of balls above<br>",
-          "269 shows Biden's chance of winning."
+          "<strong style='color:", Trump_color, "';>Trump wins.</strong> The more often the ball lands<br>",
+          "above 269, the more likely Biden will win."
         ),
         color = "gray25",
         hjust = 0, label.color = NA, label.padding = unit(c(0, 0, 0, 0), "lines"),
         vjust = 0
       ),
+      stat_histinterval(
+        aes(x = dem_ev),
+        data = df_econ,
+        slab_fill = "gray25",
+        scale = slot_height * 0.9,
+        alpha = 0.15,
+        show_interval = FALSE
+      ),
       annotate("segment", x = -50, y = 0, xend = 538 + 50, yend = 0, size = 1, color = "gray75"),
       scale_fill_manual(
-        limits = c("none", "Biden", "Trump"),
-        values = c("gray45", Biden_color, Trump_color), 
+        limits = c("done", "none", "Biden", "Trump"),
+        values = c(NA, "gray45", Biden_color, Trump_color), 
         guide = FALSE
       ),
-      scale_x_continuous(breaks = c(0, 200, 400)),
+      scale_x_continuous(breaks = c(0, 135, 269, 405, 538)),
       theme_ggdist(),
       theme(
         axis.line.y = element_blank(),
@@ -298,16 +318,15 @@ board_econ = make_plinko_board(
   center = mean_ev_adj_econ
 )
 
-autoplot(board_econ)
+autoplot(board_econ, show_dist = FALSE, show_paths = FALSE)
 ```
 
-Looks good! And the final distribution looks plausible given the theoretical
-Binomial distribution. Let's build the animation:
+Looks good! Let's build the animation:
 
 ```{r}
 options(mc.cores = 6)
 board_econ %>%
-  animate(width = width_px, height = height_px, fps = 15, end_pause = 3 * 15)
+  animate(width = width_px, height = height_px, fps = 15, cores = 7)
 ```
 
 And save it to a file:
