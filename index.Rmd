@@ -71,6 +71,7 @@ d-footnote {
 <img id="board_live" src="boards/live_galton_board.gif">
 
 <script type="text/javascript">
+document.getElementById("board_live").src = "boards/live_galton_board.gif?" + Date.now()
 setInterval(function() {
   document.getElementById("board_live").src = "boards/live_galton_board.gif?" + Date.now()
 }, 300000); // 5 minutes
