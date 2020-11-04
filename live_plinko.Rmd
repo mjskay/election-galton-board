@@ -44,12 +44,14 @@ And we wrap up the distribution of predicted EVs using `update_prob()`:
 biden_states = c("VT",  
   "VA", "CT", "DE", "IL", "MD", "MA", "NJ", "RI",
   "NM", "NY",
-  "DC", "CO"
+  "DC", "CO",
+  "WA", "OR", "CA", "NH"
 )
 trump_states = c("KY",  
-  "WV", "SC", "AK", "MS", "OK", "TN",
+  "WV", "SC", "AL", "MS", "OK", "TN",
   "AR", "IN", "LA", "ND", "SD", "WY", "NE",
   "KS",
+  "NE3", "MO", "ID"
 )
 
 df_econ = data.frame(dem_ev = update_prob(
