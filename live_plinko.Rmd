@@ -41,8 +41,8 @@ names(ev)
 And we wrap up the distribution of predicted EVs using `update_prob()`:
 
 ```{r}
-biden_states = c()
-trump_states = c()
+biden_states = c("VT")
+trump_states = c("KY")
 
 df_econ = data.frame(dem_ev = update_prob(
   biden_states = biden_states,
