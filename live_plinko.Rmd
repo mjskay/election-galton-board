@@ -50,7 +50,8 @@ biden_states = c("VT",
   
   "MN",
   
-  "NE2"
+  "NE2",
+  "ME1", "ME"
 )
 trump_states = c("KY",  
   "WV", "SC", "AL", "MS", "OK", "TN",
@@ -62,6 +63,7 @@ trump_states = c("KY",
   
   "TX",
   "NE1"
+  
 )
 
 df_econ = data.frame(dem_ev = update_prob(
@@ -151,7 +153,7 @@ binom_plot(base_plot_econ, mean_ev_econ, sd_ev_econ, bin_n_econ)
 The binomial distribution looks nearly identical to the Normal distribution here. However, like I said, it would require very large Galton boards to generate these distributions down to the single electoral vote level. So instead, let's use wider bins --- say, bins between 35 and 45 electoral votes wide. In fact, we'll pick a single bin width that we can use for both distirbutions that puts 269 as close to a bin boundary in both as we can, given the scaling/shifting of the distribution we will be doing: 
 
 ```{r}
-candidate_bin_width = 32:43
+candidate_bin_width = 25:43
 candidate_bin_n_econ = round(4 * var_ev_econ / candidate_bin_width^2)
 # minimize sum of squared distance between 269 and the nearest 
 # bin edge in both 538 and the economist's distribution
