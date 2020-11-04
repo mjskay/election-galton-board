@@ -29,7 +29,7 @@ theme_set(theme_ggdist())
 The live data model is accessible via code provided by G. Elliot Morris:
 
 ```{r}
-source("election_night_live_model.R")
+# source("election_night_live_model.R")
 ```
 
 We then get an updated EV sample by providing called states for Biden and Trump. Names available are:
@@ -42,10 +42,12 @@ And we wrap up the distribution of predicted EVs using `update_prob()`:
 
 ```{r}
 biden_states = c("VT",  
-  "VA", "CT", "DE", "IL", "MD", "MA", "NJ", "RI"
+  "VA", "CT", "DE", "IL", "MD", "MA", "NJ", "RI",
+  "NM", "NY"
 )
 trump_states = c("KY",  
-  "WV", "SC", "AK", "MS", "OK", "TN"
+  "WV", "SC", "AK", "MS", "OK", "TN",
+  "AR", "IN", "LA", "ND", "SD", "WY", "NE"
 )
 
 df_econ = data.frame(dem_ev = update_prob(
@@ -53,6 +55,11 @@ df_econ = data.frame(dem_ev = update_prob(
   trump_states = trump_states
 ))
 ```
+
+```{r}
+setdiff(names(ev), c(biden_states, trump_states))
+```
+
 
 We will plot a histogram of Biden's predicted probability of achieving each number of electoral votes (with 270 being a majority). We'll also do a side-by-side comparison:
 
