@@ -47,13 +47,15 @@ biden_states = c("VT",
   "DC", "CO",
   "WA", "OR", "CA", "NH",
   "HI"
+  
 )
 trump_states = c("KY",  
   "WV", "SC", "AL", "MS", "OK", "TN",
   "AR", "IN", "LA", "ND", "SD", "WY", "NE",
   "KS",
   "NE3", "MO", "ID",
-  "UT", "OH"
+  "UT", "OH",
+  "MT", "IA", "FL"
 )
 
 df_econ = data.frame(dem_ev = update_prob(
@@ -205,7 +207,7 @@ so that it is representative of the predictors' distributions. We'll use
 50 quantiles; i.e. a 50-dot dotplot:
 
 ```{r}
-n_ball = 40
+n_ball = 30
 
 ev_quantiles_econ = quantile(df_econ$dem_ev, ppoints(n_ball))
 ```
@@ -243,7 +245,7 @@ format_state_list = function(states) {
   if (is.null(states)) {
     "No calls yet"
   } else {
-    paste(stringi::stri_wrap(paste(sort(states), collapse = " "), width = 33, indent = 5), collapse = "<br>")
+    paste(stringi::stri_wrap(paste(sort(states), collapse = " "), width = 33, indent = 4), collapse = "<br>")
   }
 }
 
