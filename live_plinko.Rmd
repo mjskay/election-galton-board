@@ -51,7 +51,8 @@ biden_states = c("VT",
   "MN",
   
   "NE2",
-  "ME1", "ME"
+  "ME1", "ME",
+  "WI"
 )
 trump_states = c("KY",  
   "WV", "SC", "AL", "MS", "OK", "TN",
@@ -62,8 +63,8 @@ trump_states = c("KY",
   "MT", "IA", "FL",
   
   "TX",
-  "NE1"
-  
+  "NE1",
+  "ME2"
 )
 
 df_econ = data.frame(dem_ev = update_prob(
