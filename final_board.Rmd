@@ -29,7 +29,7 @@ theme_set(theme_ggdist())
 The live data model is accessible via code provided by G. Elliot Morris:
 
 ```{r}
-# source("election_night_live_model.R")
+source("election_night_live_model.R")
 ```
 
 We then get an updated EV sample by providing called states for Biden and Trump. Names available are:
@@ -257,7 +257,7 @@ format_state_list = function(states) {
   }
 }
 
-final_biden_ev = 270
+final_ev = sum(ev[biden_states])
 
 make_plinko_board = function(model_name, ...) {
   plinko_board(..., 
@@ -294,11 +294,12 @@ make_plinko_board = function(model_name, ...) {
         x = 650, y = 0,
         label = paste0(
           "<strong style='color: black;'>Presidential-Plinko.com Results Board</strong><br><br>",
-          "The size of the board shows the uncertainty<br>",
-          "in the number of electoral votes predicted for<br>",
+          "The height of the board shows the uncertainty<br>",
+          "in the number of electoral votes (EVs) predicted for<br>",
           "Biden <strong>at the beginning of election night</strong><br>",
-          "(per the Economist). The ball dropped<br>",
-          "through the board shows <strong style='color: ", Biden_color, "'>the current result:</strong><br><br>",
+          "(per the Economist). The ball is dropped from<br>",
+          "the average number of EVs he was predicted<br>",
+          "to get, landing at <strong style='color: ", Biden_color, "'>the current result:</strong><br><br>",
           "Biden (", sum(ev[biden_states]), "):", format_state_list(biden_states), "<br><br>",
           "Trump (", sum(ev[trump_states]), "):", format_state_list(trump_states), "<br><br>",
           "Uncalled (", sum(ev[uncalled_states]), "):", format_state_list(uncalled_states), ""
@@ -306,6 +307,12 @@ make_plinko_board = function(model_name, ...) {
         color = "gray25",
         hjust = 0, label.color = NA, label.padding = unit(c(0, 0, 0, 0), "lines"),
         vjust = 0
+      ),
+      annotate("polygon",
+        x = mean_ev_adj_econ + c(-10, +10, +10, +20,   0, -20, -10),
+        y = total_height *     c(.90, .90, .87, .87, .85, .87, .87),
+        fill = "black",
+        alpha = 0.2
       ),
       stat_histinterval(
         aes(x = dem_ev),
@@ -341,7 +348,7 @@ make_plinko_board = function(model_name, ...) {
 set.seed(12345)
 board_econ = make_plinko_board(
   model_name = "The Economist",
-  sum(ev[biden_states]), 
+  final_ev, 
   n_bin = bin_n_small_econ, 
   center = mean_ev_adj_econ
 )
