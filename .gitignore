@@ -1,0 +1,6 @@
+*~
+.Rhistory
+.RData
+.Rproj*
+.Rproj.user
+png_temp

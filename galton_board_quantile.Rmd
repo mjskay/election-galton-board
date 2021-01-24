@@ -1,0 +1,353 @@
+---
+title: "Quantile Galton Board"
+output: rmarkdown::html_vignette
+---
+
+While this code no longer uses the `chipmunkbasic` package, it was originally based on [`vignette("galton", package = "chipmunkbasic")`](https://coolbutuseless.github.io/package/chipmunkbasic/articles/galton.html) by [@coolbutuseless](https://coolbutuseless.github.io/).
+
+## Setup
+
+The following packages are required for this to run:
+
+```{r setup}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(ggplot2)
+library(ggdist)
+library(ggforce)
+library(gganimate)
+library(snakecase)
+```
+
+To set up [chipmunkbasic](https://coolbutuseless.github.io/package/chipmunkbasic/index.html) you must install the [chipmunkcore](https://coolbutuseless.github.io/package/chipmunkcore/) package and its dependencies as well. Both packages are not available on CRAN as of this writing, and can be a bit of a pain to install. The installation instructions in the [chipmunkcore documentation](https://coolbutuseless.github.io/package/chipmunkcore/) appear to be the most complete at this time.
+
+## Construct the board
+
+To determine the board dimensions, we need to decide on the number of draws we will take and the number of pins in one row of the board (equivalently, the size of the Binomial distribution we are simulating with the board):
+
+```{r parameters}
+n_draw = 5
+
+# n_bin = 14
+# bin_width = 42
+# board_mean = 332
+# row_ratio = 2
+# model_name = "538"
+# bin_values = c(3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6,  7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9,  9, 9, 9, 9, 9, 10, 10, 10, 11)
+
+n_bin = 8
+bin_width = 38
+board_mean = 326
+row_ratio = 2
+model_name = "The Economist"
+bin_values = c(1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,  5, 6, 6, 6, 6, 6, 6, 6, 7)
+
+# bin_values = qbinom(ppoints(n_draw), n_bin, 0.5)
+
+# the sample() call here is just so that ball order is random
+# otherwise our animation would have balls fall in order from
+# left to right.
+set.seed(12345)
+bin_values = sample(bin_values, n_draw)
+
+x_min = 0
+x_max = 538
+
+friction = 0
+elasticity = 0
+
+show_dist = FALSE
+one_frame = FALSE
+```
+
+Now we can determine the dimensions of the board required:
+
+```{r dimensions}
+row_height = bin_width * row_ratio
+# ball width is just a bit smaller than the bins
+ball_width = bin_width * 0.9 # 14/15
+# slot height needs to accommodate the tallest bin in the distribution plus some leeway
+slot_height = dbinom(round(n_bin/2), n_bin, 0.5) * n_draw * ball_width * 1.3
+board_height = slot_height + n_bin * row_height
+total_height = 2445 # board_height + 15 * bin_width
+```
+
+### Slots
+
+Next, we create slots the balls will fall into:
+
+```{r slots}
+slot_edges = seq(-(n_bin + 1)/2, (n_bin + 1)/2) * bin_width + board_mean
+
+# restrict ourselves to the predefined min/max x, if necessary
+slot_edges = slot_edges[x_min - bin_width < slot_edges & slot_edges < x_max + bin_width]
+
+# extend out the left and right edges to predefined min/max x, if necessary
+slot_edges = c(
+  rev(seq(min(slot_edges), x_min - bin_width, by = -bin_width)),
+  slot_edges[-c(1, length(slot_edges))],
+  seq(max(slot_edges), x_max + bin_width, by = bin_width)
+)
+
+# make the slot edges at the ends of the board 
+# go all the way up the height of the board
+slot_heights = rep(slot_height, length(slot_edges))
+slot_heights[[1]] = board_height
+slot_heights[[length(slot_heights)]] = board_height
+
+slots_df = data.frame(
+  x = slot_edges,
+  height = slot_heights
+)
+```
+
+### Pins
+
+Next, we can create the grid of pins:
+
+```{r pins}
+pins_df = data.frame()
+for (i in 1:n_bin) {
+  y = slot_height + (n_bin - i) * row_height
+  
+  # xs = (0:floor(n_bin/2)) * bin_width
+  # if (i %% 2 == 0) {
+  #   xs = xs + bin_width/2
+  # }
+  # xs = sort(unique(c(xs, -xs))) + board_mean
+  
+  xs = slot_edges
+  if (i %% 2 == 1) {
+    xs = xs + bin_width/2
+  }
+  
+  # restrict ourselves to the predefined min/max x
+  xs = xs[min(slot_edges) + bin_width/2 < xs & xs < max(slot_edges) - bin_width/2]
+
+  # h = 0.05
+  # for (x in xs) {
+  #   cm$add_static_segment(x, y, x, y - h, friction = friction, elasticity = elasticity)
+  # }
+  pins_df = rbind(pins_df, data.frame(x = xs, y = y))
+}
+```
+
+As a sanity check, we'll verify the pin and slot locations:
+
+```{r base_plot}
+board_plot = ggplot() + 
+  geom_segment(data = slots_df, aes(x = x, y = 0, xend = x, yend = height), size = 1) + 
+  geom_point(aes(x, y), data = pins_df, shape = 1, color = "red") +
+  coord_fixed() + 
+  theme_ggdist() 
+
+board_plot
+```
+## Final ball positions
+
+Instead of simulating the ball's path through the pins with a physics engine (as in [galton_board.Rmd](galton_board.Rmd)), we will construct a representative final distribution
+through quantiles, then determine random paths that could have led to that distribution.
+
+So first, let's determine the final positions of each ball:
+
+```{r}
+final_balls_df = 
+  tibble(
+    ball_id = 1:n_draw,
+    bin = bin_values,
+    pin = bin * 2, # pin locations are every half-bin
+    x = (bin - n_bin/2) * bin_width + board_mean,
+    move_id = n_bin + 2,
+  ) %>%
+  group_by(x) %>%
+  mutate(y = 1:n() * ball_width - ball_width/2)
+```
+
+Which looks like this:
+
+```{r}
+board_plot = board_plot + 
+  geom_circle(
+    aes(x0 = x, y0 = y, r = ball_width/2), 
+    fill = "blue", color = NA, data = final_balls_df
+  )
+
+board_plot
+```
+## Ball paths
+
+Now we need to come up with paths for each ball that would cause them to end up in their final locations.
+Given the starting pin at the mean (`m`) and the final pin (`k`), we can use the fact that a ball in a bin
+centered at pin `k` ended up in that bin if and only if it traveled `k - m` pins over from the starting pin (I'll dub these *fixed moves*), plus an equal number of left and right movements (i.e. movements which cancel themselves out; I'll dub these *balanced moves*), *in any order* (modulo hitting the edge, which we're just gonna ignore for now). So we'll just figure out what set of moves are needed for each ball and then randomize the order of those moves to make a path.
+
+```{r}
+mean_pin = n_bin # would be n_bin / 2 * 2
+
+paths_df = final_balls_df %>%
+  group_by(ball_id) %>%
+  mutate(
+    # number of fixed moves (negative if fixed moves are to the left)
+    n_fixed_move = pin - mean_pin,
+    # number of balanced moves (half of these will be to the right and half to the left)
+    n_balanced_move = n_bin - abs(n_fixed_move),
+    n_move = abs(n_fixed_move) + n_balanced_move,
+    # list of moves where each move is -1 (left) or +1 (right) or 0 (start)
+    move = list(c(
+      0,
+      sample(
+        c(rep(sign(n_fixed_move), abs(n_fixed_move)), rep(-1, n_balanced_move/2), rep(1, n_balanced_move/2)),
+        size = n_move
+      )
+    ))
+  ) %>%
+  unnest(move) %>%
+  # determine actual positions at each step based on the accumulation of moves
+  mutate(
+    move_id = 1:n(),
+    x = cumsum(move * bin_width/2) + board_mean,
+    y = move_id * -row_height + board_height + ball_width/2
+  ) %>%
+  # add final positions
+  bind_rows(final_balls_df)
+
+#add initial ball positions at the drop location
+paths_df = paths_df %>%
+  filter(move_id == 1) %>%
+  mutate(
+    move_id = 0,
+    y = y + bin_width * 10
+  ) %>%
+  bind_rows(paths_df) %>%
+  mutate(move_id = move_id + 1)
+
+head(paths_df)
+```
+
+The result is a set of paths like this:
+
+```{r}
+board_plot +
+  geom_path(aes(x = x, y = y, group = ball_id), data = paths_df, alpha = sqrt(1/n_draw))
+```
+## Construct animation frames
+
+Next, we construct a dataframe of animation frames by determining on each frame which
+move for each ball is visible (if any):
+
+```{r}
+frames_till_draw = 4
+
+# adding 30 gives some extra frames at the end for a pause
+n_frame = n_draw * frames_till_draw + n_bin + 1 - (frames_till_draw - 1) + 30
+
+frames_df = map_dfr(1:n_frame, function(i) {
+  paths_df %>%
+    mutate(
+      frame_id = i,
+      visible_move_id = i - ball_id * frames_till_draw + 1 - (frames_till_draw - 1)
+    ) %>%
+    # keep only the moves we are showing in this frame
+    filter(
+      move_id == visible_move_id  |
+      # final ball position persists
+      (move_id == max(move_id) & move_id < visible_move_id)
+    ) %>%
+    ungroup()
+})
+```
+
+## Render animation
+
+Finally, we render the animation, using `gganimate::transition_states()` to 
+tween between ball positions. Balls with the same `ball_id` will be tweened:
+
+```{r}
+x0 = seq(-n_bin/2, n_bin/2) * bin_width + board_mean
+x0 = x0[min(slot_edges) < x0 & x0 < max(slot_edges)]
+
+# figure out aspect ratio
+height_px = 800
+width_px = (x_max - x_min + 90)/total_height * height_px
+
+Biden_color = "#0571b0"
+Trump_color = "#ca0020"
+
+p = ggplot(frames_df) +
+  geom_point(aes(x, y), size = 1, shape = 18, color = "gray50", data = pins_df) +
+  geom_segment(
+    aes(x, 0, xend = x, yend = height),
+    size = 1, color = "gray75", data = slots_df
+  ) +
+  geom_circle(
+    aes(
+      x0 = x,
+      y0 = y,
+      r = ball_width/2,
+      fill = ifelse(y > slot_height, "none", ifelse(x <= 269, "Trump", "Biden")),
+      group = ball_id
+    ), color = NA) + 
+  (if (show_dist) geom_step(
+    data = data.frame(x0),
+    aes(
+      x = x0,
+      y = n_draw * ball_width * dbinom(
+        round((x0 - board_mean)/bin_width + n_bin/2),
+        size = n_bin,
+        prob = 0.5
+      )),
+    col="black",
+    alpha = 0.2,
+    size = 1,
+    direction = "mid"
+  )) +
+  geom_vline(xintercept = 269, color = "black", alpha = 0.15, size = 1) +
+  annotate("text", 
+    x = 290, y = 0.95 * total_height, 
+    label = "Biden wins", hjust = 0, color = Biden_color
+    # fontface = "bold",
+  ) +
+  annotate("text", 
+    x = 250, y = 0.95 * total_height,
+    label = "Trump wins", hjust = 1, color = Trump_color
+    # fontface = "bold",
+  ) +
+  annotate("label", 
+    x = 269, y = 0.98 * total_height,
+    label = "269", hjust = 0.5, color = "gray50",
+    fontface = "bold"
+  ) +
+  scale_fill_manual(
+    limits = c("none", "Biden", "Trump"),
+    values = c("gray45", Biden_color, Trump_color), 
+    guide = FALSE
+  ) +
+  coord_fixed(ylim = c(0, total_height), xlim = c(x_min - 45, x_max + 45), 
+    expand = FALSE, clip = "off") + 
+  theme_ggdist() + 
+  theme(
+    axis.line.y = element_blank(),
+    axis.line.x = element_line(color = "gray75", size = 1),
+    axis.title.x = element_text(hjust = 0, size = 10, color = "gray25"),
+    plot.title = element_text(hjust = 0.5),
+    plot.title.position = "plot"
+  ) +
+  scale_y_continuous(breaks = NULL) +
+  scale_x_continuous(limits = range(slot_edges, x_min, x_max)) +
+  labs(
+    x = paste0("Electoral votes for Biden\n\nPresidential Plinko of\nof ", 
+      model_name, "'s model\n", "Updated ", format(Sys.Date(), "%b %d")),
+    y = NULL
+  ) +
+  ggtitle(model_name) +
+  transition_states(frame_id, state_length = 0, transition_length = 2, wrap = FALSE) +
+  ease_aes("bounce-out")
+
+# for rendering, double the number of frames to make animation smooth
+# also need to calculate extra non-rendered frames (detail = 2) so that timing is correct
+animate(p, nframes = n_frame * 2, fps = 15, detail = 2, res = 100, width = width_px, height = height_px, type = "cairo", antialias = "gray")
+```
+
+```{r}
+anim_save(paste0("galton-board-", to_snake_case(model_name), ".gif"))
+```

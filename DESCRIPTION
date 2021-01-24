@@ -1,0 +1,18 @@
+Imports:
+  purrr,
+  dplyr,
+  tidyr,
+  Hmisc,
+  ggdist,
+  ragg,
+  patchwork,
+  gganimate,
+  snakecase,
+  ggtext,
+  metathis,
+  knitr,
+  distill,
+  plinko,
+  gifski
+Remotes:
+  mjskay/plinko
